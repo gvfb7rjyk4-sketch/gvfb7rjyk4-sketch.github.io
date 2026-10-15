@@ -1,0 +1,2131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Horse Journal</title>
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#7B4A2B">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#5B3720">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Horse Journal">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+/* Layout: one narrow column, large controls, fixed six-tab bar at the bottom.
+   Direction: tack room. Saddle-leather name plate with stitching, parchment pages,
+   hunter-green actions, brass for "current" markers. */
+:root {
+  --bg: #F3ECDC;
+  --surface: #FBF7EC;
+  --ink: #2A231C;
+  --muted: #6A5C4D;
+  --line: #DDD0B8;
+  --sage: #2F5240;          /* hunter green: main buttons, chart bars */
+  --sage-ink: #F7F1E2;
+  --sage-soft: #E3E4D0;
+  --leather: #7B4A2B;       /* saddle leather: name plate, active tab */
+  --leather-ink: #F7ECD6;
+  --stitch: #E2C99A;
+  --brass: #A9823A;
+  --brass-ink: #FFFBF0;
+  --focus: #1F3A2C;
+  --err: #8F3B2E;
+  --ok: #2F6B45;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Noto Serif", serif;
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #19150F; --surface: #231D16; --ink: #EFE6D4; --muted: #B6A68E; --line: #3B3226;
+    --sage: #9FC4A8; --sage-ink: #13201A; --sage-soft: #2B3128;
+    --leather: #5B3720; --leather-ink: #F5E6C8; --stitch: #B8945C;
+    --brass: #D4B064; --brass-ink: #1E170D;
+    --focus: #CFE3D3; --err: #E39A8B; --ok: #9CC9A1; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #19150F; --surface: #231D16; --ink: #EFE6D4; --muted: #B6A68E; --line: #3B3226;
+  --sage: #9FC4A8; --sage-ink: #13201A; --sage-soft: #2B3128;
+  --leather: #5B3720; --leather-ink: #F5E6C8; --stitch: #B8945C;
+  --brass: #D4B064; --brass-ink: #1E170D;
+  --focus: #CFE3D3; --err: #E39A8B; --ok: #9CC9A1; color-scheme: dark;
+}
+
+html { -webkit-text-size-adjust: 100%; color-scheme: light; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.5;
+  padding-block: 16px 120px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.app { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+/* Name plate: leather with a stitched edge, like a bridle or saddle plate */
+header {
+  position: relative;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--leather); color: var(--leather-ink);
+  border-radius: 18px; padding: 20px 22px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 6px rgba(40, 22, 10, 0.18);
+}
+header::after {
+  content: ""; position: absolute; inset: 7px; pointer-events: none;
+  border: 1.5px dashed var(--stitch); border-radius: 12px; opacity: 0.85;
+}
+.plate { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.plate svg { flex: none; width: 46px; height: 46px; color: var(--stitch); }
+header .eyebrow { color: var(--stitch); }
+header h1 { color: var(--leather-ink); }
+header .pill { background: rgba(0, 0, 0, 0.22); color: var(--leather-ink); position: relative; z-index: 1; }
+header .pill.bad { background: var(--surface); color: var(--err); border-color: var(--err); }
+
+.eyebrow { margin: 0; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+h1, h2 { font-family: var(--font-display); font-weight: 700; margin: 0; text-wrap: balance; line-height: 1.15; }
+h1 { font-size: 30px; letter-spacing: 0.01em; overflow-wrap: anywhere; }
+h2 { font-size: 22px; }
+.pill {
+  font-size: 14px; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+  background: var(--sage-soft); color: var(--ink); white-space: nowrap; border: 1.5px solid transparent;
+}
+.pill.bad { background: transparent; color: var(--err); border-color: var(--err); }
+
+.panel { display: flex; flex-direction: column; gap: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.card > h2:first-child { padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.card.inset { background: var(--bg); }
+.card p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 15px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+label { font-weight: 600; font-size: 16px; }
+input, select, textarea {
+  font: inherit; font-size: 17px; color: var(--ink); background: var(--bg);
+  border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; min-height: 52px; width: 100%;
+}
+.card.inset input, .card.inset select { background: var(--surface); }
+textarea { min-height: 110px; resize: vertical; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, .btn:focus-visible, .tab:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--focus); outline-offset: 2px;
+}
+
+.btn {
+  font: inherit; font-weight: 600; font-size: 17px; min-height: 52px; padding: 12px 20px; border-radius: 14px;
+  border: 1.5px solid var(--sage); background: var(--sage); color: var(--sage-ink); cursor: pointer;
+}
+.btn.secondary { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.danger { background: transparent; color: var(--err); border-color: var(--err); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+.status { min-height: 1.5em; font-size: 16px; font-weight: 500; }
+.status.ok { color: var(--ok); }
+.status.err { color: var(--err); }
+
+.notice { border: 1.5px solid var(--err); border-radius: 14px; padding: 14px 16px; color: var(--err); font-weight: 500; }
+.soon { align-self: flex-start; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); border: 1.5px dashed var(--line); border-radius: 999px; padding: 4px 12px; }
+
+details { border-top: 1px solid var(--line); padding-top: 14px; }
+summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+details p { margin-top: 10px; }
+
+/* Bottom bar: parchment strip with a stitched top edge; active tab is a leather keeper */
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: var(--surface); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px;
+  padding: 10px max(8px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+}
+.tabs::before {
+  content: ""; position: absolute; left: 12px; right: 12px; top: 4px;
+  border-top: 1.5px dashed var(--line);
+}
+.tab {
+  font: inherit; font-size: 14px; font-weight: 600; min-height: 52px; border: 0; border-radius: 12px;
+  background: transparent; color: var(--muted); cursor: pointer; padding: 0 2px;
+}
+.tab[aria-current="page"] { background: var(--leather); color: var(--leather-ink); }
+
+.list { display: flex; flex-direction: column; gap: 12px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--sage-soft); padding: 6px; border-radius: 16px; }
+.seg-btn { font: inherit; font-weight: 600; font-size: 16px; min-height: 48px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); cursor: pointer; }
+.seg-btn[aria-pressed="true"] { background: var(--surface); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }
+.seg-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.remind { margin: 0; background: var(--sage-soft); border-radius: 12px; padding: 10px 14px; font-weight: 500; border-left: 4px solid var(--brass); }
+.tag { display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--sage-soft); }
+.tag.now { background: var(--brass); color: var(--brass-ink); }
+.plan-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.plan-row .wide { grid-column: 1 / -1; }
+.plan-row input, .plan-row select { background: var(--surface); }
+.bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 120px; }
+.bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; font-size: 13px; }
+.bar i { display: block; width: 100%; max-width: 34px; background: var(--sage); border-radius: 6px 6px 2px 2px; }
+.bar b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.bar span { color: var(--muted); }
+.entry h3 { margin: 0; font-size: 17px; }
+.entry { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.entry p { margin: 0; overflow-wrap: anywhere; }
+.entry-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.entry .btn { min-height: 44px; padding: 8px 16px; font-size: 16px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .tab { transition: background-color 0.15s, border-color 0.15s; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="plate">
+      <svg viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="7.5" stroke-linecap="round"><path d="M11.9 30 A14 14 0 1 1 36.1 30"/><g style="fill: var(--leather)" stroke="none"><circle cx="10.8" cy="27.8" r="1.5"/><circle cx="10.5" cy="19.4" r="1.5"/><circle cx="15.4" cy="12.0" r="1.5"/><circle cx="32.6" cy="12.0" r="1.5"/><circle cx="37.5" cy="19.4" r="1.5"/><circle cx="37.2" cy="27.8" r="1.5"/></g></svg>
+      <div>
+        <p class="eyebrow">Stable journal</p>
+        <h1 id="title">Your horse</h1>
+      </div>
+    </div>
+    <span id="storagePill" class="pill">Starting…</span>
+  </header>
+
+  <main>
+    <section id="panel-home" class="panel">
+      <div id="homeNoHorse" class="card">
+        <h2>Welcome</h2>
+        <p class="muted">Start by adding your horse. Then you can log feedings, activities and moods, and see how things are going here.</p>
+        <div class="actions"><button id="homeAddHorse" class="btn" type="button">Add a horse</button></div>
+      </div>
+      <div id="homeMain" class="panel" hidden>
+        <div class="actions">
+          <button id="homeLogFeeding" class="btn" type="button">Log a feeding</button>
+          <button id="homeLogActivity" class="btn secondary" type="button">Log activity or mood</button>
+        </div>
+        <div id="homeHorseWrap" class="card">
+          <div class="field"><label for="homeHorse">Showing</label><select id="homeHorse"></select></div>
+        </div>
+        <section id="homeRemindCard" class="card" hidden><h2>Reminders</h2><div id="homeReminders" class="list"></div></section>
+        <section class="card"><h2>Today</h2><div id="homeToday" class="list"></div></section>
+        <section class="card">
+          <h2>Last 7 days</h2>
+          <p class="muted small">Feedings logged each day</p>
+          <div id="homeBars" class="bars" role="img"></div>
+          <div id="homeWeek" class="list"></div>
+        </section>
+        <section class="card"><h2>Current diet plan</h2><div id="homePlans" class="list"></div></section>
+      </div>
+    </section>
+
+    <section id="panel-log" class="panel" hidden>
+      <div id="logNoHorse" class="card">
+        <h2>Daily log</h2>
+        <p class="muted">Add a horse first, then come back here to log what you did and how they were.</p>
+        <div class="actions"><button id="goHorse" class="btn" type="button">Add a horse</button></div>
+      </div>
+
+      <div id="logMain" class="panel" hidden>
+      <div class="seg" role="group" aria-label="What to log">
+        <button id="seg-feeding" class="seg-btn" type="button" aria-pressed="true">Feeding</button>
+        <button id="seg-activity" class="seg-btn" type="button" aria-pressed="false">Activity and mood</button>
+      </div>
+
+      <div id="logFeeding" class="panel">
+        <form id="feedingForm" class="card" novalidate>
+          <h2 id="feedingHeading">New feeding</h2>
+          <div class="grid">
+            <div class="field"><label for="f-fHorse">Horse</label><select id="f-fHorse"></select></div>
+            <div class="field"><label for="f-fWhen">Date and time</label><input id="f-fWhen" type="datetime-local"></div>
+          </div>
+          <div class="field">
+            <label for="f-fFeed">Feed</label>
+            <select id="f-fFeed"></select>
+            <p id="fNoFeeds" class="muted small">Add the feeds you use in the Feeds tab first.</p>
+            <p id="fFeedNote" class="remind" hidden></p>
+          </div>
+          <div class="grid">
+            <div class="field"><label for="f-fOffered">Amount offered</label><input id="f-fOffered" type="number" inputmode="decimal" min="0" step="any"></div>
+            <div class="field"><label for="f-fLeft">Amount left</label><input id="f-fLeft" type="number" inputmode="decimal" min="0" step="any"></div>
+            <div class="field">
+              <label for="f-fUnit">Unit</label>
+              <select id="f-fUnit"></select>
+              <input id="f-fUnit-other" type="text" placeholder="Type the unit" maxlength="20" hidden aria-label="Other unit">
+            </div>
+          </div>
+          <p id="fEaten" class="remind" aria-live="polite">Eaten: enter the amount offered and left</p>
+          <div class="grid">
+            <div class="field">
+              <label for="f-fInterest">Interest before eating</label>
+              <select id="f-fInterest"></select>
+              <input id="f-fInterest-other" type="text" placeholder="Type it" maxlength="60" hidden aria-label="Other interest">
+            </div>
+            <div class="field">
+              <label for="f-fAccept">Acceptance after tasting</label>
+              <select id="f-fAccept"></select>
+              <input id="f-fAccept-other" type="text" placeholder="Type it" maxlength="60" hidden aria-label="Other acceptance">
+            </div>
+            <div class="field">
+              <label for="f-fBehaviour">Eating behaviour</label>
+              <select id="f-fBehaviour"></select>
+              <input id="f-fBehaviour-other" type="text" placeholder="Type it" maxlength="60" hidden aria-label="Other eating behaviour">
+            </div>
+            <div class="field">
+              <label for="f-fObs">Observations afterwards</label>
+              <select id="f-fObs"></select>
+              <input id="f-fObs-other" type="text" placeholder="Type it" maxlength="60" hidden aria-label="Other observation">
+            </div>
+          </div>
+          <div class="field"><label for="f-fNotes">Notes (optional)</label><textarea id="f-fNotes" maxlength="1000"></textarea></div>
+          <div class="actions">
+            <button id="feedingSaveBtn" class="btn" type="submit" disabled>Save feeding</button>
+            <button id="feedingCancelBtn" class="btn secondary" type="button" hidden>Cancel edit</button>
+          </div>
+          <p id="feedingStatus" class="status" role="status" aria-live="polite"></p>
+        </form>
+        <section class="card" aria-labelledby="feedingListHeading">
+          <h2 id="feedingListHeading">Recent feedings</h2>
+          <div id="fFilterWrap" class="field" hidden><label for="fFilter">Show</label><select id="fFilter"></select></div>
+          <div id="feedingList" class="list"></div>
+          <p id="fMore" class="muted small" hidden>Showing the latest 50. Find older ones in History.</p>
+        </section>
+      </div>
+
+      <div id="logActivity" class="panel" hidden>
+      <form id="logForm" class="card" novalidate hidden>
+        <h2 id="logHeading">New entry</h2>
+        <p class="muted small">Activity and mood. Feeding entries come in a later step.</p>
+        <div class="grid">
+          <div class="field">
+            <label for="f-logHorse">Horse</label>
+            <select id="f-logHorse"></select>
+          </div>
+          <div class="field">
+            <label for="f-when">Date and time</label>
+            <input id="f-when" type="datetime-local">
+          </div>
+          <div class="field">
+            <label for="f-activity">What you did</label>
+            <select id="f-activity"></select>
+            <input id="f-activity-other" type="text" placeholder="Type the activity" maxlength="60" hidden aria-label="Other activity">
+          </div>
+          <div class="field">
+            <label for="f-minutes">How long</label>
+            <select id="f-minutes"></select>
+          </div>
+          <div class="field">
+            <label for="f-mood">Mood or behaviour</label>
+            <select id="f-mood"></select>
+            <input id="f-mood-other" type="text" placeholder="Type the mood or behaviour" maxlength="60" hidden aria-label="Other mood or behaviour">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-logNotes">Notes</label>
+          <textarea id="f-logNotes" maxlength="1000"></textarea>
+        </div>
+        <div class="actions">
+          <button id="logSaveBtn" class="btn" type="submit" disabled>Save entry</button>
+          <button id="logCancelBtn" class="btn secondary" type="button" hidden>Cancel edit</button>
+        </div>
+        <p id="logStatus" class="status" role="status" aria-live="polite"></p>
+      </form>
+
+      <section id="logListCard" class="card" hidden aria-labelledby="logListHeading">
+        <h2 id="logListHeading">Recent entries</h2>
+        <div id="logFilterWrap" class="field" hidden>
+          <label for="logFilter">Show</label>
+          <select id="logFilter"></select>
+        </div>
+        <div id="logList" class="list"></div>
+        <p id="logMore" class="muted small" hidden>Showing the latest 50 entries. Find older ones in History.</p>
+      </section>
+      </div>
+      </div>
+    </section>
+
+    <section id="panel-history" class="panel" hidden>
+      <div class="card">
+        <h2>History</h2>
+        <div class="field"><label for="f-hSearch">Search</label><input id="f-hSearch" type="search" placeholder="Feed, mood, note…" autocomplete="off"></div>
+        <div class="grid">
+          <div class="field"><label for="f-hHorse">Horse</label><select id="f-hHorse"></select></div>
+          <div class="field">
+            <label for="f-hType">Type</label>
+            <select id="f-hType">
+              <option value="">Everything</option>
+              <option value="feeding">Feedings</option>
+              <option value="activity">Activity and mood</option>
+              <option value="diet">Diet plans</option>
+            </select>
+          </div>
+          <div class="field"><label for="f-hFrom">From</label><input id="f-hFrom" type="date"></div>
+          <div class="field"><label for="f-hTo">To</label><input id="f-hTo" type="date"></div>
+        </div>
+        <div class="actions"><button id="hClear" class="btn secondary" type="button">Clear filters</button></div>
+        <p id="hCount" class="muted small" role="status" aria-live="polite"></p>
+      </div>
+      <div id="hList" class="list"></div>
+      <div class="actions"><button id="hMore" class="btn secondary" type="button" hidden>Show more</button></div>
+      <section class="card" aria-labelledby="exportHeading">
+        <h2 id="exportHeading">Export to Excel</h2>
+        <p class="muted small">Each button makes a CSV file that opens in Excel, Google Sheets and similar apps. It holds everything of that kind, not only the results above.</p>
+        <div class="actions">
+          <button id="exFeedings" class="btn secondary" type="button">Feedings</button>
+          <button id="exActivity" class="btn secondary" type="button">Activity and mood</button>
+          <button id="exDiet" class="btn secondary" type="button">Diet plans</button>
+        </div>
+        <p id="exportStatus" class="status" role="status" aria-live="polite"></p>
+      </section>
+    </section>
+
+    <section id="panel-feeds" class="panel" hidden>
+      <section class="card" aria-labelledby="feedListHeading">
+        <h2 id="feedListHeading">Your feeds</h2>
+        <p class="muted small">A few common feeds are here to start with. Tap Edit to change the unit or add a note, and Delete any you don't use.</p>
+        <div id="feedList" class="list"></div>
+      </section>
+      <form id="feedForm" class="card" novalidate>
+        <h2 id="feedHeading">Add a feed</h2>
+        <p class="muted small">Pick from the list, or choose Other. These are the feeds you will pick from when logging a feeding. You can change or remove them at any time.</p>
+        <div class="field">
+          <label for="f-feedName">Feed</label>
+          <select id="f-feedName"></select>
+          <input id="f-feedName-other" type="text" placeholder="Type the feed" maxlength="60" hidden aria-label="Other feed">
+        </div>
+        <div class="field">
+          <label for="f-feedUnit">Usual unit</label>
+          <select id="f-feedUnit"></select>
+          <input id="f-feedUnit-other" type="text" placeholder="Type the unit" maxlength="20" hidden aria-label="Other unit">
+        </div>
+        <div class="field">
+          <label for="f-feedNote">Note (optional)</label>
+          <input id="f-feedNote" type="text" maxlength="200" placeholder="Anything to remember" autocomplete="off">
+        </div>
+        <div class="actions">
+          <button id="feedSaveBtn" class="btn" type="submit" disabled>Add feed</button>
+          <button id="feedCancelBtn" class="btn secondary" type="button" hidden>Cancel edit</button>
+        </div>
+        <p id="feedStatus" class="status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="panel-diet" class="panel" hidden>
+      <div id="dietNoHorse" class="card">
+        <h2>Diet plan</h2>
+        <p class="muted">Add a horse first, then write down the plan being followed.</p>
+        <div class="actions"><button id="dietAddHorse" class="btn" type="button">Add a horse</button></div>
+      </div>
+      <div id="dietMain" class="panel" hidden>
+        <div class="card">
+          <div class="field"><label for="dietHorse">Horse</label><select id="dietHorse"></select></div>
+        </div>
+        <section class="card" aria-labelledby="dietCurrentHeading">
+          <h2 id="dietCurrentHeading">Current plan</h2>
+          <div id="dietCurrentBody" class="list"></div>
+          <div class="actions"><button id="dietNewBtn" class="btn" type="button">Change the plan</button></div>
+        </section>
+        <form id="dietForm" class="card" novalidate hidden>
+          <h2 id="dietHeading">New plan</h2>
+          <p class="muted small">Write down what is being fed. This journal only records. It never suggests feeds or amounts. Saving keeps the older plan in the history below.</p>
+          <div class="field"><label for="f-dietFrom">Starts on</label><input id="f-dietFrom" type="date"></div>
+          <div id="dietRows" class="list"></div>
+          <div class="actions"><button id="dietAddRow" class="btn secondary" type="button">Add a feed</button></div>
+          <div class="field"><label for="f-dietNote">Reason for the change (optional)</label><textarea id="f-dietNote" maxlength="500"></textarea></div>
+          <div class="actions">
+            <button id="dietSaveBtn" class="btn" type="submit">Save plan</button>
+            <button id="dietCancelBtn" class="btn secondary" type="button">Cancel</button>
+          </div>
+          <p id="dietStatus" class="status" role="status" aria-live="polite"></p>
+        </form>
+        <section class="card" aria-labelledby="dietHistoryHeading">
+          <h2 id="dietHistoryHeading">Plan history</h2>
+          <div id="dietHistory" class="list"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="panel-horse" class="panel">
+      <div id="offline" class="notice" hidden>
+        This browser is not letting the journal keep entries. Turn off private browsing, or open the journal in your normal browser.
+      </div>
+
+      <div id="pickerCard" class="card" hidden>
+        <div class="field">
+          <label for="horsePicker">Horse</label>
+          <select id="horsePicker"></select>
+        </div>
+      </div>
+
+      <form id="horseForm" class="card" novalidate>
+        <h2 id="formHeading">New horse</h2>
+        <div class="field">
+          <label for="f-name">Name</label>
+          <input id="f-name" type="text" autocomplete="off" maxlength="60">
+        </div>
+        <div class="grid">
+          <div class="field">
+            <label for="f-breed">Breed</label>
+            <select id="f-breed"></select>
+            <input id="f-breed-other" type="text" placeholder="Type the breed" maxlength="60" hidden aria-label="Other breed">
+          </div>
+          <div class="field">
+            <label for="f-colour">Colour</label>
+            <select id="f-colour"></select>
+            <input id="f-colour-other" type="text" placeholder="Type the colour" maxlength="40" hidden aria-label="Other colour">
+          </div>
+          <div class="field">
+            <label for="f-sex">Sex</label>
+            <select id="f-sex">
+              <option value="">Not set</option>
+              <option>Mare</option>
+              <option>Gelding</option>
+              <option>Stallion</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-birthYear">Year born</label>
+            <select id="f-birthYear"></select>
+            <span id="ageText" class="muted small" aria-live="polite"></span>
+          </div>
+          <div class="field">
+            <label for="f-weightKg">Weight (kg, optional)</label>
+            <input id="f-weightKg" type="number" inputmode="decimal" min="1" step="1">
+          </div>
+          <div class="field">
+            <label for="f-defaultUnit">Usual feed unit</label>
+            <select id="f-defaultUnit"></select>
+            <input id="f-defaultUnit-other" type="text" placeholder="Type the unit" maxlength="20" hidden aria-label="Other unit">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-notes">Notes</label>
+          <textarea id="f-notes" maxlength="1000"></textarea>
+        </div>
+        <div class="actions">
+          <button id="saveBtn" class="btn" type="submit" disabled>Save horse</button>
+          <button id="deleteBtn" class="btn danger" type="button" hidden>Delete this horse</button>
+        </div>
+        <div id="deletePrompt" class="card inset" hidden>
+          <p id="deleteText"></p>
+          <div class="actions">
+            <button id="deleteConfirm" class="btn danger" type="button">Yes, delete</button>
+            <button id="deleteCancel" class="btn secondary" type="button">Keep</button>
+          </div>
+        </div>
+        <p id="saveStatus" class="status" role="status" aria-live="polite"></p>
+      </form>
+
+      <section class="card" aria-labelledby="backupHeading">
+        <h2 id="backupHeading">Backup</h2>
+        <p class="muted small" id="lastBackup">Last backup: checking…</p>
+        <div class="actions">
+          <button id="backupBtn" class="btn" type="button" disabled>Download backup</button>
+          <label class="btn secondary" for="restoreFile" id="restoreLabel" style="display:inline-flex;align-items:center;cursor:pointer">Restore from backup</label>
+          <input id="restoreFile" type="file" accept=".json,application/json" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" tabindex="-1">
+        </div>
+        <div id="restorePrompt" hidden class="card inset">
+          <p id="restoreText"></p>
+          <div class="actions">
+            <button id="restoreConfirm" class="btn" type="button">Restore these records</button>
+            <button id="restoreCancel" class="btn secondary" type="button">Cancel</button>
+          </div>
+        </div>
+        <p id="backupStatus" class="status" role="status" aria-live="polite"></p>
+        <details>
+          <summary>Where is my data kept?</summary>
+          <p class="muted">Everything you enter is kept on this phone, inside this app. It is not sent anywhere and it does not copy itself to other devices. Clearing the browser's data, removing the app or switching to a new phone erases it, so make a backup now and then. To move to another phone, make a backup here and restore it there.</p>
+        </details>
+      </section>
+    </section>
+  </main>
+</div>
+
+<nav class="tabs" aria-label="Sections">
+  <button class="tab" id="tab-home" type="button">Home</button>
+  <button class="tab" id="tab-log" type="button">Log</button>
+  <button class="tab" id="tab-history" type="button">History</button>
+  <button class="tab" id="tab-feeds" type="button">Feeds</button>
+  <button class="tab" id="tab-diet" type="button">Diet</button>
+  <button class="tab" id="tab-horse" type="button">Horse</button>
+</nav>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var APP = "horse-feeding-journal";
+  // Collections included in backups. Later steps add feeds, logs and diet plans here.
+  var COLLECTIONS = ["horses", "activity", "feeds", "feedings", "dietPlans"];
+  var TABS = ["home", "log", "history", "feeds", "diet", "horse"];
+
+  // Dropdown choices. Every list also offers "Other…", which reveals a box to type in.
+  var LISTS = {
+    breed: ["Thoroughbred", "Arabian", "Quarter Horse", "Warmblood", "South African Warmblood", "Hanoverian", "Boerperd",
+      "Nooitgedacht", "Basotho Pony", "Friesian", "Lusitano", "Andalusian", "Appaloosa", "Paint Horse", "Cob",
+      "Irish Draught", "Welsh Pony", "Shetland Pony", "Standardbred", "Mixed breed", "Unknown"].sort(),
+    colour: ["Bay", "Dark bay", "Chestnut", "Liver chestnut", "Black", "Grey", "Palomino", "Buckskin", "Dun", "Roan",
+      "Cremello", "Piebald", "Skewbald", "Spotted"].sort(),
+    defaultUnit: ["kg", "g", "scoops", "flakes", "litres", "cups"],
+    activity: ["Ride", "Dressage", "Jumping", "Lunging", "Groundwork", "Trail ride", "Turnout", "Grooming", "Bathing",
+      "Vet visit", "Farrier", "Rest day"],
+    mood: ["Calm", "Relaxed", "Happy", "Alert", "Energetic", "Playful", "Focused", "Forward-going", "Distracted",
+      "Spooky", "Nervous", "Tense", "Stubborn", "Lazy", "Tired", "Grumpy", "Unsettled"],
+    feedName: ["Apples", "Barley", "Beet pulp", "Bran", "Carrots", "Chaff", "Coarse mix", "Cubes", "Electrolytes",
+      "Grass (grazing)", "Hay", "Linseed", "Lucerne", "Maize", "Oats", "Oil", "Pellets", "Rice bran", "Salt lick",
+      "Supplement", "Teff hay", "Treats"],
+    feedUnit: ["kg", "g", "scoops", "flakes", "litres", "cups"],
+    fUnit: ["kg", "g", "scoops", "flakes", "litres", "cups"],
+    fInterest: ["Keen", "Interested", "Hesitant", "Not interested"],
+    fAccept: ["Ate readily", "Ate some", "Picked at it", "Refused"],
+    fBehaviour: ["Normal", "Eager", "Slow", "Fast", "Dropping feed", "Sorting through feed", "Restless"],
+    fObs: ["Nothing unusual", "Settled", "Drank water", "Went back for more", "Restless", "Left some feed"]
+  };
+
+  var db = null, downloads = null, uiReady = false;
+  var horses = [], currentId = null, initialised = false, addingNew = false;
+  var dirty = false, saving = false, pendingRestore = null;
+
+  /* ---------- tabs ---------- */
+  function showTab(name) {
+    TABS.forEach(function (t) {
+      $("panel-" + t).hidden = t !== name;
+      $("tab-" + t).setAttribute("aria-current", t === name ? "page" : "false");
+    });
+    try { localStorage.setItem("hfj-tab", name); } catch (e) {}
+    if (name === "log") refreshLogForm();
+    if (uiReady && name === "home") renderHome();
+    if (uiReady && name === "history") renderHistory();
+    window.scrollTo(0, 0);
+  }
+  TABS.forEach(function (t) { $("tab-" + t).addEventListener("click", function () { showTab(t); }); });
+  var first = "home";
+  try { var savedTab = localStorage.getItem("hfj-tab"); if (TABS.indexOf(savedTab) > -1) first = savedTab; } catch (e) {}
+  showTab(first);
+
+  /* ---------- small helpers ---------- */
+  function setStatus(el, msg, kind) {
+    el.textContent = msg || "";
+    el.className = "status" + (kind ? " " + kind : "");
+  }
+  function setPill(text, bad) {
+    $("storagePill").textContent = text;
+    $("storagePill").className = "pill" + (bad ? " bad" : "");
+  }
+  function addOpt(sel, value, text) {
+    var o = document.createElement("option");
+    o.value = value; o.textContent = text;
+    sel.appendChild(o);
+  }
+  function find(id) {
+    for (var i = 0; i < horses.length; i++) if (horses[i].id === id) return horses[i];
+    return null;
+  }
+  function sortHorses() {
+    horses.sort(function (a, b) { return String(a.name || "").localeCompare(String(b.name || "")); });
+  }
+
+  /* ---------- dropdowns with an "Other" box ---------- */
+  function toggleOther(key, focus) {
+    var on = $("f-" + key).value === "__other";
+    $("f-" + key + "-other").hidden = !on;
+    if (on && focus) $("f-" + key + "-other").focus();
+  }
+  function initList(key, withNotSet) {
+    var sel = $("f-" + key);
+    if (withNotSet) addOpt(sel, "", "Not set");
+    LISTS[key].forEach(function (o) { addOpt(sel, o, o); });
+    addOpt(sel, "__other", "Other…");
+    sel.addEventListener("change", function () { toggleOther(key, true); });
+  }
+  function setList(key, value) {
+    var sel = $("f-" + key), other = $("f-" + key + "-other");
+    other.value = "";
+    if (!value) { sel.value = (key === "defaultUnit" || key === "feedUnit" || key === "fUnit") ? "kg" : ""; }
+    else if (LISTS[key].indexOf(value) > -1) { sel.value = value; }
+    else { sel.value = "__other"; other.value = value; }
+    toggleOther(key, false);
+  }
+  function getList(key) {
+    var v = $("f-" + key).value;
+    return v === "__other" ? $("f-" + key + "-other").value.trim() : v;
+  }
+  initList("breed", true);
+  initList("colour", true);
+  initList("defaultUnit", false);
+  initList("activity", true);
+  initList("mood", true);
+  initList("feedName", true);
+  initList("feedUnit", false);
+  initList("fUnit", false);
+  initList("fInterest", true);
+  initList("fAccept", true);
+  initList("fBehaviour", true);
+  initList("fObs", true);
+
+  (function buildYears() {
+    var sel = $("f-birthYear"), thisYear = new Date().getFullYear();
+    addOpt(sel, "", "Not set");
+    for (var y = thisYear; y >= 1990; y--) addOpt(sel, String(y), String(y));
+  })();
+
+  // Age is worked out from the year born, so it stays correct without any typing.
+  function renderAge() {
+    var y = Number($("f-birthYear").value), el = $("ageText");
+    if (!y) { el.textContent = ""; return; }
+    var age = new Date().getFullYear() - y;
+    el.textContent = age < 1 ? "Under 1 year old" : "About " + age + (age === 1 ? " year old" : " years old");
+  }
+  $("f-birthYear").addEventListener("change", renderAge);
+
+  /* ---------- horse form ---------- */
+  function fillForm(h) {
+    h = h || {};
+    $("f-name").value = h.name || "";
+    setList("breed", h.breed);
+    setList("colour", h.colour);
+    $("f-sex").value = h.sex || "";
+    var ysel = $("f-birthYear");
+    if (h.birthYear != null && !ysel.querySelector('option[value="' + h.birthYear + '"]')) addOpt(ysel, String(h.birthYear), String(h.birthYear));
+    ysel.value = h.birthYear == null ? "" : String(h.birthYear);
+    renderAge();
+    $("f-weightKg").value = h.weightKg == null ? "" : h.weightKg;
+    setList("defaultUnit", h.defaultUnit);
+    $("f-notes").value = h.notes || "";
+    $("formHeading").textContent = currentId ? "Horse profile" : "New horse";
+    $("deleteBtn").hidden = !currentId;
+    $("deletePrompt").hidden = true;
+  }
+  function numOrNull(v) {
+    if (v === "" || v == null) return null;
+    var n = Number(v);
+    return isFinite(n) ? n : NaN;
+  }
+  function readForm() {
+    return {
+      name: $("f-name").value.trim(),
+      breed: getList("breed"),
+      colour: getList("colour"),
+      sex: $("f-sex").value,
+      birthYear: numOrNull($("f-birthYear").value),
+      weightKg: numOrNull($("f-weightKg").value),
+      defaultUnit: getList("defaultUnit") || "kg",
+      notes: $("f-notes").value.trim()
+    };
+  }
+  function validate() {
+    if (!$("f-name").value.trim()) return "Add a name so the journal knows who it is for.";
+    var checks = [["breed", "breed"], ["colour", "colour"], ["defaultUnit", "unit"]];
+    for (var i = 0; i < checks.length; i++) {
+      if ($("f-" + checks[i][0]).value === "__other" && !$("f-" + checks[i][0] + "-other").value.trim())
+        return "Type the " + checks[i][1] + " in the box, or pick one from the list.";
+    }
+    var w = numOrNull($("f-weightKg").value);
+    if (Number.isNaN(w) || (w !== null && (w <= 0 || w > 1500))) return "Weight should be between 1 and 1500 kg, or left blank.";
+    return "";
+  }
+  function renderHeader() {
+    var h = currentId ? find(currentId) : null;
+    $("title").textContent = h && h.name ? h.name : (horses.length ? "New horse" : "Your horse");
+  }
+  function renderPicker() {
+    var p = $("horsePicker");
+    p.innerHTML = "";
+    horses.forEach(function (h) { addOpt(p, h.id, h.name || "Unnamed horse"); });
+    addOpt(p, "__new", horses.length ? "Add another horse" : "Add your first horse");
+    p.value = currentId || "__new";
+    $("pickerCard").hidden = horses.length === 0;
+  }
+  function rememberHorse() {
+    try { if (currentId) localStorage.setItem("hfj-horse", currentId); } catch (e) {}
+  }
+  function chooseHorse(id) {
+    currentId = id; dirty = false; addingNew = !id && horses.length > 0;
+    fillForm(id ? find(id) : null);
+    renderPicker(); renderHeader(); rememberHorse();
+    setStatus($("saveStatus"), "", "");
+  }
+
+  $("horsePicker").addEventListener("change", function () {
+    chooseHorse(this.value === "__new" ? null : this.value);
+  });
+
+  document.querySelectorAll("#horseForm input, #horseForm select, #horseForm textarea").forEach(function (el) {
+    el.addEventListener("input", function () { dirty = true; setStatus($("saveStatus"), "Unsaved changes", ""); });
+    el.addEventListener("change", function () { dirty = true; setStatus($("saveStatus"), "Unsaved changes", ""); });
+  });
+
+  $("horseForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (!db || saving) return;
+    var problem = validate();
+    if (problem) { setStatus($("saveStatus"), problem, "err"); return; }
+    var d = readForm();
+    var existing = currentId ? find(currentId) : null;
+    var id = currentId || db.collection("horses").doc().id;
+    var now = new Date().toISOString();
+    d.createdAt = (existing && existing.createdAt) || now;
+    d.updatedAt = now;
+    saving = true;
+    $("saveBtn").disabled = true;
+    setStatus($("saveStatus"), "Saving…", "");
+    db.doc("horses/" + id).set(d).then(function () {
+      var rec = Object.assign({ id: id }, d), idx = -1;
+      horses.forEach(function (h, i) { if (h.id === id) idx = i; });
+      if (idx > -1) horses[idx] = rec; else horses.push(rec);
+      sortHorses();
+      currentId = id; dirty = false;
+      fillForm(rec);
+      renderPicker(); renderHeader(); rememberHorse();
+      setStatus($("saveStatus"), "Saved", "ok");
+    }).catch(function (e) {
+      var msg = e && e.code === "quota_exceeded" ? "Storage is full. Delete something and try again."
+        : "Could not save. Check your connection and press Save again. Your changes are still on screen.";
+      setStatus($("saveStatus"), msg, "err");
+    }).then(function () {
+      saving = false; $("saveBtn").disabled = false;
+    });
+  });
+
+  /* ---------- delete a horse ---------- */
+  $("deleteBtn").addEventListener("click", function () {
+    var h = currentId ? find(currentId) : null;
+    if (!h) return;
+    $("deleteText").textContent = "Delete " + (h.name || "this horse") + "? Their profile is removed from the journal. A backup file you already saved keeps a copy.";
+    $("deletePrompt").hidden = false;
+  });
+  $("deleteCancel").addEventListener("click", function () { $("deletePrompt").hidden = true; });
+  $("deleteConfirm").addEventListener("click", function () {
+    var id = currentId;
+    if (!db || !id) return;
+    $("deleteConfirm").disabled = true;
+    db.doc("horses/" + id).delete().then(function () {
+      horses = horses.filter(function (h) { return h.id !== id; });
+      chooseHorse(horses[0] ? horses[0].id : null);
+      setStatus($("saveStatus"), "Deleted", "ok");
+    }).catch(function () {
+      setStatus($("saveStatus"), "Could not delete. Try again in a moment.", "err");
+    }).then(function () { $("deleteConfirm").disabled = false; });
+  });
+
+  /* ---------- backup ---------- */
+  function fmtWhen(iso) {
+    try {
+      return new Date(iso).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return iso; }
+  }
+  function renderLastBackup(meta) {
+    lastBackupAt = meta && meta.lastBackupAt ? meta.lastBackupAt : null;
+    if (uiReady) renderHome();
+    $("lastBackup").textContent = meta && meta.lastBackupAt
+      ? "Last backup: " + fmtWhen(meta.lastBackupAt) + (Date.now() - new Date(meta.lastBackupAt).getTime() > 30 * 86400000 ? ". Time for a new one." : "")
+      : "No backup yet. Your entries only live on this phone, so make one now and then.";
+  }
+
+  $("backupBtn").addEventListener("click", function () {
+    if (!db) return;
+    if (!downloads) { setStatus($("backupStatus"), "Making a backup file is not available in this browser.", "err"); return; }
+    setStatus($("backupStatus"), "Preparing backup…", "");
+    var out = { app: APP, version: 1, exportedAt: new Date().toISOString(), data: {} };
+    var count = 0;
+    Promise.all(COLLECTIONS.map(function (c) {
+      return db.collection(c).get().then(function (snap) {
+        out.data[c] = {};
+        snap.docs.forEach(function (d) { out.data[c][d.id] = d.data(); count++; });
+      });
+    })).then(function () {
+      var stamp = new Date().toLocaleDateString("en-CA");
+      return downloads.save({ filename: "horse-journal-backup-" + stamp + ".json", data: JSON.stringify(out, null, 2) });
+    }).then(function () {
+      var now = new Date().toISOString();
+      setStatus($("backupStatus"), "Backup created (" + count + " record" + (count === 1 ? "" : "s") + "). Keep the file somewhere safe.", "ok");
+      return db.doc("meta/backup").set({ lastBackupAt: now });
+    }).catch(function (e) {
+      if (e && e.code === "declined") setStatus($("backupStatus"), "Backup cancelled. Nothing was saved.", "");
+      else setStatus($("backupStatus"), "Could not make the backup. Try again in a moment.", "err");
+    });
+  });
+
+  $("restoreFile").addEventListener("change", function () {
+    var file = this.files && this.files[0];
+    this.value = "";
+    pendingRestore = null;
+    $("restorePrompt").hidden = true;
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onerror = function () { setStatus($("backupStatus"), "Could not read that file.", "err"); };
+    reader.onload = function () {
+      var obj;
+      try { obj = JSON.parse(String(reader.result)); } catch (e) { obj = null; }
+      if (!obj || obj.app !== APP || !obj.data || typeof obj.data !== "object") {
+        setStatus($("backupStatus"), "That does not look like a backup from this journal.", "err");
+        return;
+      }
+      var n = 0;
+      COLLECTIONS.forEach(function (c) { if (obj.data[c] && typeof obj.data[c] === "object") n += Object.keys(obj.data[c]).length; });
+      if (n === 0) { setStatus($("backupStatus"), "That backup has no records in it.", "err"); return; }
+      pendingRestore = obj;
+      $("restoreText").textContent = "This backup was made " + fmtWhen(obj.exportedAt) + " and holds " + n + " record" + (n === 1 ? "" : "s") +
+        ". Restoring replaces any current records that share the same entries. Nothing else is deleted.";
+      $("restorePrompt").hidden = false;
+      setStatus($("backupStatus"), "", "");
+    };
+    reader.readAsText(file);
+  });
+  $("restoreCancel").addEventListener("click", function () {
+    pendingRestore = null; $("restorePrompt").hidden = true;
+  });
+  $("restoreConfirm").addEventListener("click", function () {
+    var obj = pendingRestore;
+    if (!obj || !db) return;
+    $("restoreConfirm").disabled = true;
+    setStatus($("backupStatus"), "Restoring…", "");
+    var jobs = [];
+    COLLECTIONS.forEach(function (c) {
+      var docs = obj.data[c];
+      if (!docs || typeof docs !== "object") return;
+      Object.keys(docs).forEach(function (id) {
+        if (docs[id] && typeof docs[id] === "object" && !Array.isArray(docs[id])) jobs.push([c, id, docs[id]]);
+      });
+    });
+    var done = 0, failed = 0;
+    jobs.reduce(function (chain, j) {
+      return chain.then(function () {
+        return db.doc(j[0] + "/" + j[1]).set(j[2]).then(function () { done++; }, function () { failed++; });
+      });
+    }, Promise.resolve()).then(function () {
+      pendingRestore = null; $("restorePrompt").hidden = true; $("restoreConfirm").disabled = false;
+      if (failed) setStatus($("backupStatus"), "Restored " + done + " record" + (done === 1 ? "" : "s") + ". " + failed + " could not be restored.", "err");
+      else setStatus($("backupStatus"), "Restored " + done + " record" + (done === 1 ? "" : "s") + ".", "ok");
+    });
+  });
+
+  /* ---------- activity and mood log ---------- */
+  var entries = [], editingId = null, logDirty = false, savingLog = false, confirmDeleteId = null;
+  var DURATIONS = [10, 15, 20, 30, 40, 45, 60, 75, 90, 120, 150, 180];
+
+  (function buildMinutes() {
+    var s = $("f-minutes");
+    addOpt(s, "", "Not set");
+    DURATIONS.forEach(function (m) { addOpt(s, String(m), m + " min"); });
+  })();
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function nowLocal() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function fmtEntryTime(s) {
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    return d.toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+  function findEntry(id) {
+    for (var i = 0; i < entries.length; i++) if (entries[i].id === id) return entries[i];
+    return null;
+  }
+
+  function renderLogHorses() {
+    $("logMain").hidden = horses.length === 0;
+    var s = $("f-logHorse"), keep = s.value;
+    s.innerHTML = "";
+    horses.forEach(function (h) { addOpt(s, h.id, h.name || "Unnamed horse"); });
+    var has = horses.length > 0;
+    $("logForm").hidden = !has;
+    $("logNoHorse").hidden = has;
+    $("logListCard").hidden = !has;
+    if (keep && find(keep)) s.value = keep;
+    else if (currentId && find(currentId)) s.value = currentId;
+    else if (horses[0]) s.value = horses[0].id;
+    var f = $("logFilter"), fk = f.value;
+    f.innerHTML = "";
+    addOpt(f, "", "All horses");
+    horses.forEach(function (h) { addOpt(f, h.id, h.name || "Unnamed horse"); });
+    f.value = fk && find(fk) ? fk : "";
+    $("logFilterWrap").hidden = horses.length < 2;
+    renderEntries();
+  }
+
+  function refreshLogForm() {
+    refreshFeedingForm();
+    if (editingId || logDirty) return;
+    $("f-when").value = nowLocal();
+    if (currentId && find(currentId)) $("f-logHorse").value = currentId;
+  }
+
+  function resetLogForm() {
+    editingId = null; logDirty = false;
+    $("f-when").value = nowLocal();
+    setList("activity", "");
+    setList("mood", "");
+    $("f-minutes").value = "";
+    $("f-logNotes").value = "";
+    $("logHeading").textContent = "New entry";
+    $("logSaveBtn").textContent = "Save entry";
+    $("logCancelBtn").hidden = true;
+  }
+
+  function startEdit(id) {
+    var e = findEntry(id);
+    if (!e) return;
+    editingId = id; logDirty = false;
+    var hs = $("f-logHorse");
+    if (!find(e.horseId) && !hs.querySelector('option[value="' + e.horseId + '"]')) addOpt(hs, e.horseId, (e.horseName || "Removed horse") + " (removed)");
+    hs.value = e.horseId;
+    $("f-when").value = e.when || nowLocal();
+    setList("activity", e.activity);
+    setList("mood", e.mood);
+    var ms = $("f-minutes");
+    if (e.minutes != null && !ms.querySelector('option[value="' + e.minutes + '"]')) addOpt(ms, String(e.minutes), e.minutes + " min");
+    ms.value = e.minutes == null ? "" : String(e.minutes);
+    $("f-logNotes").value = e.notes || "";
+    $("logHeading").textContent = "Edit entry";
+    $("logSaveBtn").textContent = "Save changes";
+    $("logCancelBtn").hidden = false;
+    setStatus($("logStatus"), "", "");
+    $("logForm").scrollIntoView();
+  }
+
+  function validateLog() {
+    if (!$("f-logHorse").value) return "Pick a horse.";
+    if (!$("f-when").value) return "Pick the date and time.";
+    var checks = [["activity", "activity"], ["mood", "mood or behaviour"]];
+    for (var i = 0; i < checks.length; i++) {
+      if ($("f-" + checks[i][0]).value === "__other" && !$("f-" + checks[i][0] + "-other").value.trim())
+        return "Type the " + checks[i][1] + " in the box, or pick one from the list.";
+    }
+    if (!getList("activity") && !getList("mood") && !$("f-logNotes").value.trim())
+      return "Choose what you did or how your horse was, or add a note.";
+    return "";
+  }
+
+  function renderEntries() {
+    if (uiReady) { renderHome(); renderHistory(); }
+    var box = $("logList"), filter = $("logFilter").value;
+    box.innerHTML = "";
+    var shown = entries.filter(function (e) { return !filter || e.horseId === filter; });
+    var total = shown.length;
+    shown = shown.slice(0, 50);
+    if (!shown.length) {
+      var empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = entries.length ? "No entries for this horse yet." : "No entries yet. Your first one will appear here.";
+      box.appendChild(empty);
+    }
+    shown.forEach(function (e) {
+      var art = document.createElement("article");
+      art.className = "entry";
+      var top = document.createElement("div");
+      top.className = "entry-top";
+      var who = document.createElement("strong");
+      var h = find(e.horseId);
+      who.textContent = h ? (h.name || "Unnamed horse") : (e.horseName || "Removed horse");
+      var when = document.createElement("span");
+      when.className = "muted";
+      when.textContent = fmtEntryTime(e.when);
+      top.appendChild(who); top.appendChild(when);
+      art.appendChild(top);
+      var parts = [];
+      if (e.activity) parts.push(e.activity);
+      if (e.minutes) parts.push(e.minutes + " min");
+      if (e.mood) parts.push(e.mood);
+      if (parts.length) { var p1 = document.createElement("p"); p1.textContent = parts.join(" · "); art.appendChild(p1); }
+      if (e.notes) { var p2 = document.createElement("p"); p2.className = "muted"; p2.textContent = e.notes; art.appendChild(p2); }
+      var acts = document.createElement("div");
+      acts.className = "actions";
+      function mk(text, act, cls) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "btn " + cls; b.textContent = text;
+        b.setAttribute("data-act", act); b.setAttribute("data-id", e.id);
+        acts.appendChild(b);
+      }
+      if (confirmDeleteId === e.id) { mk("Yes, delete", "delete", "danger"); mk("Keep", "keep", "secondary"); }
+      else { mk("Edit", "edit", "secondary"); mk("Delete", "ask", "secondary"); }
+      art.appendChild(acts);
+      box.appendChild(art);
+    });
+    $("logMore").hidden = total <= 50;
+  }
+
+  function deleteEntry(id) {
+    if (!db) return;
+    db.doc("activity/" + id).delete().then(function () {
+      entries = entries.filter(function (e) { return e.id !== id; });
+      confirmDeleteId = null;
+      if (editingId === id) resetLogForm();
+      renderEntries();
+      setStatus($("logStatus"), "Entry deleted", "ok");
+    }).catch(function () {
+      setStatus($("logStatus"), "Could not delete. Try again in a moment.", "err");
+    });
+  }
+
+  function subscribeActivity() {
+    db.collection("activity").orderBy("when", "desc").onSnapshot(function (snap) {
+      entries = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      renderEntries();
+    }, function () {
+      setStatus($("logStatus"), "Lost the connection to storage. Reload the page.", "err");
+    });
+  }
+
+  document.querySelectorAll("#logForm input, #logForm select, #logForm textarea").forEach(function (el) {
+    el.addEventListener("input", function () { logDirty = true; });
+    el.addEventListener("change", function () { logDirty = true; });
+  });
+  $("logFilter").addEventListener("change", renderEntries);
+  $("goHorse").addEventListener("click", function () { showTab("horse"); });
+  $("logCancelBtn").addEventListener("click", function () { resetLogForm(); setStatus($("logStatus"), "", ""); });
+  $("logList").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-act]");
+    if (!b) return;
+    var id = b.getAttribute("data-id"), act = b.getAttribute("data-act");
+    if (act === "edit") startEdit(id);
+    else if (act === "ask") { confirmDeleteId = id; renderEntries(); }
+    else if (act === "keep") { confirmDeleteId = null; renderEntries(); }
+    else if (act === "delete") deleteEntry(id);
+  });
+
+  $("logForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (!db || savingLog) return;
+    var problem = validateLog();
+    if (problem) { setStatus($("logStatus"), problem, "err"); return; }
+    var hid = $("f-logHorse").value, h = find(hid);
+    var d = {
+      horseId: hid,
+      horseName: h ? h.name : "",
+      when: $("f-when").value,
+      activity: getList("activity"),
+      mood: getList("mood"),
+      minutes: numOrNull($("f-minutes").value),
+      notes: $("f-logNotes").value.trim()
+    };
+    var existing = editingId ? findEntry(editingId) : null;
+    var id = editingId || db.collection("activity").doc().id;
+    var now = new Date().toISOString();
+    d.createdAt = (existing && existing.createdAt) || now;
+    d.updatedAt = now;
+    var wasEdit = !!editingId;
+    savingLog = true;
+    $("logSaveBtn").disabled = true;
+    setStatus($("logStatus"), "Saving…", "");
+    db.doc("activity/" + id).set(d).then(function () {
+      var rec = Object.assign({ id: id }, d), idx = -1;
+      entries.forEach(function (e, i) { if (e.id === id) idx = i; });
+      if (idx > -1) entries[idx] = rec; else entries.push(rec);
+      entries.sort(function (a, b) { return String(b.when).localeCompare(String(a.when)); });
+      resetLogForm();
+      renderEntries();
+      setStatus($("logStatus"), wasEdit ? "Changes saved" : "Entry saved", "ok");
+    }).catch(function (e) {
+      var msg = e && e.code === "quota_exceeded" ? "Storage is full. Delete something and try again."
+        : "Could not save. Check your connection and press Save again. Your entry is still on screen.";
+      setStatus($("logStatus"), msg, "err");
+    }).then(function () {
+      savingLog = false; $("logSaveBtn").disabled = false;
+    });
+  });
+
+  /* ---------- feed library ---------- */
+  var feeds = [], editingFeedId = null, savingFeed = false, confirmDeleteFeedId = null;
+
+  function sortFeeds() {
+    feeds.sort(function (a, b) { return String(a.name || "").localeCompare(String(b.name || "")); });
+  }
+  function findFeed(id) {
+    for (var i = 0; i < feeds.length; i++) if (feeds[i].id === id) return feeds[i];
+    return null;
+  }
+  function resetFeedForm() {
+    editingFeedId = null;
+    setList("feedName", "");
+    setList("feedUnit", "");
+    $("f-feedNote").value = "";
+    $("feedHeading").textContent = "Add a feed";
+    $("feedSaveBtn").textContent = "Add feed";
+    $("feedCancelBtn").hidden = true;
+  }
+  function startEditFeed(id) {
+    var f = findFeed(id);
+    if (!f) return;
+    editingFeedId = id;
+    setList("feedName", f.name);
+    setList("feedUnit", f.unit);
+    $("f-feedNote").value = f.note || "";
+    $("feedHeading").textContent = "Edit feed";
+    $("feedSaveBtn").textContent = "Save changes";
+    $("feedCancelBtn").hidden = false;
+    setStatus($("feedStatus"), "", "");
+    $("feedForm").scrollIntoView();
+  }
+  function renderFeeds() {
+    renderFeedSelect();
+    if (uiReady) renderHome();
+    var box = $("feedList");
+    box.innerHTML = "";
+    if (!feeds.length) {
+      var empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "No feeds yet. Pick the ones you use from the list above.";
+      box.appendChild(empty);
+      return;
+    }
+    feeds.forEach(function (f) {
+      var art = document.createElement("article");
+      art.className = "entry";
+      var top = document.createElement("div");
+      top.className = "entry-top";
+      var nm = document.createElement("strong");
+      nm.textContent = f.name;
+      var un = document.createElement("span");
+      un.className = "muted";
+      un.textContent = "Usual unit: " + (f.unit || "kg");
+      top.appendChild(nm); top.appendChild(un);
+      art.appendChild(top);
+      if (f.note) { var pn = document.createElement("p"); pn.textContent = f.note; art.appendChild(pn); }
+      var acts = document.createElement("div");
+      acts.className = "actions";
+      function mk(text, act, cls) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "btn " + cls; b.textContent = text;
+        b.setAttribute("data-act", act); b.setAttribute("data-id", f.id);
+        acts.appendChild(b);
+      }
+      if (confirmDeleteFeedId === f.id) { mk("Yes, delete", "delete", "danger"); mk("Keep", "keep", "secondary"); }
+      else { mk("Edit", "edit", "secondary"); mk("Delete", "ask", "secondary"); }
+      art.appendChild(acts);
+      box.appendChild(art);
+    });
+  }
+  function subscribeFeeds() {
+    db.collection("feeds").onSnapshot(function (snap) {
+      feeds = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      sortFeeds();
+      renderFeeds();
+    }, function () {});
+  }
+
+  $("feedCancelBtn").addEventListener("click", function () { resetFeedForm(); setStatus($("feedStatus"), "", ""); });
+  $("feedList").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-act]");
+    if (!b) return;
+    var id = b.getAttribute("data-id"), act = b.getAttribute("data-act");
+    if (act === "edit") startEditFeed(id);
+    else if (act === "ask") { confirmDeleteFeedId = id; renderFeeds(); }
+    else if (act === "keep") { confirmDeleteFeedId = null; renderFeeds(); }
+    else if (act === "delete") {
+      db.doc("feeds/" + id).delete().then(function () {
+        feeds = feeds.filter(function (f) { return f.id !== id; });
+        confirmDeleteFeedId = null;
+        if (editingFeedId === id) resetFeedForm();
+        renderFeeds();
+        setStatus($("feedStatus"), "Feed deleted", "ok");
+      }).catch(function () { setStatus($("feedStatus"), "Could not delete. Try again in a moment.", "err"); });
+    }
+  });
+
+  $("feedForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (!db || savingFeed) return;
+    var chosen = $("f-feedName").value;
+    if (!chosen) { setStatus($("feedStatus"), "Pick a feed from the list, or choose Other.", "err"); return; }
+    if (chosen === "__other" && !$("f-feedName-other").value.trim()) { setStatus($("feedStatus"), "Type the feed in the box, or pick one from the list.", "err"); return; }
+    if ($("f-feedUnit").value === "__other" && !$("f-feedUnit-other").value.trim()) { setStatus($("feedStatus"), "Type the unit in the box, or pick one from the list.", "err"); return; }
+    var name = getList("feedName");
+    var dup = feeds.some(function (f) { return f.id !== editingFeedId && String(f.name).toLowerCase() === name.toLowerCase(); });
+    if (dup) { setStatus($("feedStatus"), name + " is already in your list. Edit it instead.", "err"); return; }
+    var existing = editingFeedId ? findFeed(editingFeedId) : null;
+    var id = editingFeedId || db.collection("feeds").doc().id;
+    var now = new Date().toISOString();
+    var d = { name: name, unit: getList("feedUnit") || "kg", note: $("f-feedNote").value.trim(),
+      createdAt: (existing && existing.createdAt) || now, updatedAt: now };
+    var wasEdit = !!editingFeedId;
+    savingFeed = true;
+    $("feedSaveBtn").disabled = true;
+    setStatus($("feedStatus"), "Saving…", "");
+    db.doc("feeds/" + id).set(d).then(function () {
+      var rec = Object.assign({ id: id }, d), idx = -1;
+      feeds.forEach(function (f, i) { if (f.id === id) idx = i; });
+      if (idx > -1) feeds[idx] = rec; else feeds.push(rec);
+      sortFeeds();
+      resetFeedForm();
+      renderFeeds();
+      setStatus($("feedStatus"), wasEdit ? "Changes saved" : "Feed added", "ok");
+    }).catch(function (e) {
+      var msg = e && e.code === "quota_exceeded" ? "Storage is full. Delete something and try again."
+        : "Could not save. Press Save again. Your changes are still on screen.";
+      setStatus($("feedStatus"), msg, "err");
+    }).then(function () {
+      savingFeed = false; $("feedSaveBtn").disabled = false;
+    });
+  });
+
+  /* ---------- shared helpers ---------- */
+  var lastBackupAt = null;
+  var UNITS = ["kg", "g", "scoops", "flakes", "litres", "cups"];
+  var TIMES = ["Morning", "Midday", "Afternoon", "Evening", "Night", "All day"];
+  function today() { return nowLocal().slice(0, 10); }
+  function fmtNum(n) { return n == null || isNaN(n) ? "" : String(Math.round(n * 100) / 100); }
+  function fmtDay(d) {
+    var x = new Date(d + "T00:00");
+    return isNaN(x.getTime()) ? d : x.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function horseName(id, fallback) {
+    var h = find(id);
+    return h ? (h.name || "Unnamed horse") : (fallback || "Removed horse");
+  }
+  function fillHorseSelect(sel, withAll) {
+    var keep = sel.value;
+    sel.innerHTML = "";
+    if (withAll) addOpt(sel, "", "All horses");
+    horses.forEach(function (h) { addOpt(sel, h.id, h.name || "Unnamed horse"); });
+    if (keep && find(keep)) sel.value = keep;
+    else if (withAll) sel.value = "";
+    else sel.value = currentId && find(currentId) ? currentId : (horses[0] ? horses[0].id : "");
+  }
+  function makeButtons(box, id, defs) {
+    defs.forEach(function (d) {
+      var b = el("button", "btn " + d[2], d[0]);
+      b.type = "button"; b.setAttribute("data-act", d[1]); b.setAttribute("data-id", id);
+      box.appendChild(b);
+    });
+  }
+  function setSeg(which) {
+    var feeding = which === "feeding";
+    $("logFeeding").hidden = !feeding;
+    $("logActivity").hidden = feeding;
+    $("seg-feeding").setAttribute("aria-pressed", feeding ? "true" : "false");
+    $("seg-activity").setAttribute("aria-pressed", feeding ? "false" : "true");
+  }
+  $("seg-feeding").addEventListener("click", function () { setSeg("feeding"); });
+  $("seg-activity").addEventListener("click", function () { setSeg("activity"); });
+
+  function renderOtherHorseSelects() {
+    renderFeedingHorses();
+    fillHorseSelect($("f-hHorse"), true);
+    fillHorseSelect($("homeHorse"), true);
+    $("homeHorseWrap").hidden = horses.length < 2;
+    renderDiet();
+    renderHistory();
+    renderHome();
+  }
+
+  /* ---------- feeding entries ---------- */
+  var feedings = [], editingFeedingId = null, feedingDirty = false, savingFeeding = false, confirmDeleteFeedingId = null;
+  var FEEDING_LISTS = [["fInterest", "interest before eating"], ["fAccept", "acceptance after tasting"], ["fBehaviour", "eating behaviour"], ["fObs", "observation"], ["fUnit", "unit"]];
+
+  function findFeeding(id) {
+    for (var i = 0; i < feedings.length; i++) if (feedings[i].id === id) return feedings[i];
+    return null;
+  }
+  function renderFeedSelect() {
+    var sel = $("f-fFeed"), keep = sel.value;
+    sel.innerHTML = "";
+    addOpt(sel, "", feeds.length ? "Choose a feed" : "No feeds yet");
+    feeds.forEach(function (f) { addOpt(sel, f.id, f.name); });
+    if (keep && findFeed(keep)) sel.value = keep;
+    else if (keep && sel.querySelector('option[value="' + keep + '"]')) sel.value = keep;
+    $("fNoFeeds").hidden = feeds.length > 0;
+    showFeedNote();
+  }
+  function showFeedNote() {
+    var f = findFeed($("f-fFeed").value);
+    $("fFeedNote").hidden = !(f && f.note);
+    $("fFeedNote").textContent = f && f.note ? "Reminder: " + f.note : "";
+  }
+  function updateEaten() {
+    var o = numOrNull($("f-fOffered").value), l = numOrNull($("f-fLeft").value), u = getList("fUnit") || "";
+    var t = "Eaten: enter the amount offered and left";
+    if (o !== null && !isNaN(o) && l !== null && !isNaN(l)) t = l > o ? "The amount left is more than the amount offered." : "Eaten: " + fmtNum(o - l) + " " + u;
+    $("fEaten").textContent = t;
+  }
+  function refreshFeedingForm() {
+    if (editingFeedingId || feedingDirty) return;
+    $("f-fWhen").value = nowLocal();
+    if (currentId && find(currentId)) $("f-fHorse").value = currentId;
+  }
+  function renderFeedingHorses() {
+    fillHorseSelect($("f-fHorse"), false);
+    fillHorseSelect($("fFilter"), true);
+    $("fFilterWrap").hidden = horses.length < 2;
+    renderFeedingList();
+  }
+  function resetFeedingForm() {
+    editingFeedingId = null; feedingDirty = false;
+    $("f-fWhen").value = nowLocal();
+    $("f-fFeed").value = "";
+    $("f-fOffered").value = "";
+    $("f-fLeft").value = "";
+    FEEDING_LISTS.forEach(function (x) { setList(x[0], ""); });
+    $("f-fNotes").value = "";
+    $("feedingHeading").textContent = "New feeding";
+    $("feedingSaveBtn").textContent = "Save feeding";
+    $("feedingCancelBtn").hidden = true;
+    showFeedNote(); updateEaten();
+  }
+  function startEditFeeding(id) {
+    var f = findFeeding(id);
+    if (!f) return;
+    editingFeedingId = id; feedingDirty = false;
+    var hs = $("f-fHorse");
+    if (!find(f.horseId) && !hs.querySelector('option[value="' + f.horseId + '"]')) addOpt(hs, f.horseId, (f.horseName || "Removed horse") + " (removed)");
+    hs.value = f.horseId;
+    $("f-fWhen").value = f.when || nowLocal();
+    var fs = $("f-fFeed");
+    if (f.feedId && !findFeed(f.feedId) && !fs.querySelector('option[value="' + f.feedId + '"]')) addOpt(fs, f.feedId, (f.feedName || "Removed feed") + " (removed)");
+    fs.value = f.feedId || "";
+    $("f-fOffered").value = f.offered == null ? "" : f.offered;
+    $("f-fLeft").value = f.left == null ? "" : f.left;
+    setList("fUnit", f.unit);
+    setList("fInterest", f.interest);
+    setList("fAccept", f.accept);
+    setList("fBehaviour", f.behaviour);
+    setList("fObs", f.obs);
+    $("f-fNotes").value = f.notes || "";
+    $("feedingHeading").textContent = "Edit feeding";
+    $("feedingSaveBtn").textContent = "Save changes";
+    $("feedingCancelBtn").hidden = false;
+    setStatus($("feedingStatus"), "", "");
+    showFeedNote(); updateEaten();
+    $("feedingForm").scrollIntoView();
+  }
+  function validateFeeding() {
+    if (!$("f-fHorse").value) return "Pick a horse.";
+    if (!$("f-fWhen").value) return "Pick the date and time.";
+    if (!$("f-fFeed").value) return "Choose a feed. Add feeds in the Feeds tab if the list is empty.";
+    var o = numOrNull($("f-fOffered").value), l = numOrNull($("f-fLeft").value);
+    if (o === null || isNaN(o) || o < 0) return "Enter the amount offered.";
+    if (l !== null && (isNaN(l) || l < 0)) return "The amount left should be a number, or left blank.";
+    if (l !== null && l > o) return "The amount left is more than the amount offered.";
+    for (var i = 0; i < FEEDING_LISTS.length; i++) {
+      var k = FEEDING_LISTS[i][0];
+      if ($("f-" + k).value === "__other" && !$("f-" + k + "-other").value.trim()) return "Type the " + FEEDING_LISTS[i][1] + " in the box, or pick one from the list.";
+    }
+    return "";
+  }
+  function renderFeedingList() {
+    if (uiReady) { renderHome(); renderHistory(); }
+    var box = $("feedingList"), filter = $("fFilter").value;
+    box.innerHTML = "";
+    var shown = feedings.filter(function (f) { return !filter || f.horseId === filter; });
+    var total = shown.length;
+    shown = shown.slice(0, 50);
+    if (!shown.length) box.appendChild(el("p", "muted", feedings.length ? "No feedings for this horse yet." : "No feedings yet. Your first one will appear here."));
+    shown.forEach(function (f) {
+      var art = el("article", "entry");
+      var top = el("div", "entry-top");
+      top.appendChild(el("strong", "", horseName(f.horseId, f.horseName)));
+      top.appendChild(el("span", "muted", fmtEntryTime(f.when)));
+      art.appendChild(top);
+      art.appendChild(el("p", "", feedingSummary(f)));
+      var l2 = feedingDetails(f);
+      if (l2) art.appendChild(el("p", "muted", l2));
+      if (f.notes) art.appendChild(el("p", "muted", f.notes));
+      var acts = el("div", "actions");
+      if (confirmDeleteFeedingId === f.id) makeButtons(acts, f.id, [["Yes, delete", "delete", "danger"], ["Keep", "keep", "secondary"]]);
+      else makeButtons(acts, f.id, [["Edit", "edit", "secondary"], ["Delete", "ask", "secondary"]]);
+      art.appendChild(acts);
+      box.appendChild(art);
+    });
+    $("fMore").hidden = total <= 50;
+  }
+  function feedingSummary(f) {
+    var u = f.unit || "";
+    var t = (f.feedName || "Feed") + " · offered " + fmtNum(f.offered) + " " + u;
+    if (f.left != null) t += " · left " + fmtNum(f.left);
+    if (f.eaten != null) t += " · ate " + fmtNum(f.eaten) + " " + u;
+    return t;
+  }
+  function feedingDetails(f) {
+    var a = [];
+    if (f.interest) a.push("Before: " + f.interest);
+    if (f.accept) a.push("After tasting: " + f.accept);
+    if (f.behaviour) a.push(f.behaviour);
+    if (f.obs) a.push("Afterwards: " + f.obs);
+    return a.join(" · ");
+  }
+  function subscribeFeedings() {
+    db.collection("feedings").orderBy("when", "desc").onSnapshot(function (snap) {
+      feedings = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      renderFeedingList();
+    }, function () {});
+  }
+
+  $("f-fFeed").addEventListener("change", function () {
+    var f = findFeed(this.value);
+    if (f) setList("fUnit", f.unit);
+    showFeedNote(); updateEaten();
+  });
+  ["f-fOffered", "f-fLeft", "f-fUnit", "f-fUnit-other"].forEach(function (id) { $(id).addEventListener("input", updateEaten); $(id).addEventListener("change", updateEaten); });
+  document.querySelectorAll("#feedingForm input, #feedingForm select, #feedingForm textarea").forEach(function (e) {
+    e.addEventListener("input", function () { feedingDirty = true; });
+    e.addEventListener("change", function () { feedingDirty = true; });
+  });
+  $("fFilter").addEventListener("change", renderFeedingList);
+  $("feedingCancelBtn").addEventListener("click", function () { resetFeedingForm(); setStatus($("feedingStatus"), "", ""); });
+  $("feedingList").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-act]");
+    if (!b) return;
+    var id = b.getAttribute("data-id"), act = b.getAttribute("data-act");
+    if (act === "edit") startEditFeeding(id);
+    else if (act === "ask") { confirmDeleteFeedingId = id; renderFeedingList(); }
+    else if (act === "keep") { confirmDeleteFeedingId = null; renderFeedingList(); }
+    else if (act === "delete") {
+      db.doc("feedings/" + id).delete().then(function () {
+        feedings = feedings.filter(function (f) { return f.id !== id; });
+        confirmDeleteFeedingId = null;
+        if (editingFeedingId === id) resetFeedingForm();
+        renderFeedingList();
+        setStatus($("feedingStatus"), "Feeding deleted", "ok");
+      }).catch(function () { setStatus($("feedingStatus"), "Could not delete. Try again in a moment.", "err"); });
+    }
+  });
+  $("feedingForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (!db || savingFeeding) return;
+    var problem = validateFeeding();
+    if (problem) { setStatus($("feedingStatus"), problem, "err"); return; }
+    var hid = $("f-fHorse").value, fid = $("f-fFeed").value, feed = findFeed(fid);
+    var existing = editingFeedingId ? findFeeding(editingFeedingId) : null;
+    var o = numOrNull($("f-fOffered").value), l = numOrNull($("f-fLeft").value);
+    var now = new Date().toISOString();
+    var d = {
+      horseId: hid, horseName: horseName(hid, existing && existing.horseName),
+      when: $("f-fWhen").value,
+      feedId: fid, feedName: feed ? feed.name : (existing ? existing.feedName : ""),
+      unit: getList("fUnit") || "kg",
+      offered: o, left: l, eaten: l === null ? null : Math.round((o - l) * 10000) / 10000,
+      interest: getList("fInterest"), accept: getList("fAccept"), behaviour: getList("fBehaviour"), obs: getList("fObs"),
+      notes: $("f-fNotes").value.trim(),
+      createdAt: (existing && existing.createdAt) || now, updatedAt: now
+    };
+    var id = editingFeedingId || db.collection("feedings").doc().id, wasEdit = !!editingFeedingId;
+    savingFeeding = true;
+    $("feedingSaveBtn").disabled = true;
+    setStatus($("feedingStatus"), "Saving…", "");
+    db.doc("feedings/" + id).set(d).then(function () {
+      var rec = Object.assign({ id: id }, d), idx = -1;
+      feedings.forEach(function (f, i) { if (f.id === id) idx = i; });
+      if (idx > -1) feedings[idx] = rec; else feedings.push(rec);
+      feedings.sort(function (a, b) { return String(b.when).localeCompare(String(a.when)); });
+      resetFeedingForm();
+      renderFeedingList();
+      setStatus($("feedingStatus"), wasEdit ? "Changes saved" : "Feeding saved", "ok");
+    }).catch(function (e) {
+      setStatus($("feedingStatus"), e && e.code === "quota_exceeded" ? "Storage is full. Delete something and try again." : "Could not save. Press Save again. Your entry is still on screen.", "err");
+    }).then(function () {
+      savingFeeding = false; $("feedingSaveBtn").disabled = false;
+    });
+  });
+
+  /* ---------- diet plans ---------- */
+  var plans = [], editingPlanId = null, savingPlan = false, confirmDeletePlanId = null;
+
+  function findPlan(id) {
+    for (var i = 0; i < plans.length; i++) if (plans[i].id === id) return plans[i];
+    return null;
+  }
+  function plansFor(hid) {
+    return plans.filter(function (p) { return p.horseId === hid; }).sort(function (a, b) {
+      return String(b.from || "").localeCompare(String(a.from || "")) || String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
+    });
+  }
+  function currentPlan(hid) {
+    var t = today(), list = plansFor(hid);
+    for (var i = 0; i < list.length; i++) if (list[i].from <= t) return list[i];
+    return null;
+  }
+  function itemText(it) {
+    return [it.feedName, it.amount != null ? fmtNum(it.amount) + " " + (it.unit || "") : "", it.time].filter(Boolean).join(" · ");
+  }
+  function planBlock(p, withNotes) {
+    var box = el("div", "list");
+    (p.items || []).forEach(function (it) {
+      box.appendChild(el("p", "", itemText(it)));
+      var f = findFeed(it.feedId);
+      if (withNotes && f && f.note) box.appendChild(el("p", "remind", f.name + ": " + f.note));
+    });
+    if (p.note) box.appendChild(el("p", "muted", p.note));
+    return box;
+  }
+  function renderDiet() {
+    var has = horses.length > 0;
+    $("dietNoHorse").hidden = has;
+    $("dietMain").hidden = !has;
+    if (uiReady) { renderHome(); renderHistory(); }
+    if (!has) return;
+    fillHorseSelect($("dietHorse"), false);
+    var hid = $("dietHorse").value;
+    var cur = $("dietCurrentBody");
+    cur.innerHTML = "";
+    var c = currentPlan(hid);
+    if (c) { cur.appendChild(el("p", "muted small", "Since " + fmtDay(c.from))); cur.appendChild(planBlock(c, true)); }
+    else cur.appendChild(el("p", "muted", "No plan recorded yet. Press the button to write down the plan being followed."));
+    $("dietNewBtn").textContent = c ? "Change the plan" : "Write the plan";
+    var hist = $("dietHistory");
+    hist.innerHTML = "";
+    var list = plansFor(hid), t = today();
+    if (!list.length) hist.appendChild(el("p", "muted", "Nothing here yet."));
+    list.forEach(function (p) {
+      var art = el("article", "entry");
+      var top = el("div", "entry-top");
+      top.appendChild(el("strong", "", "From " + fmtDay(p.from)));
+      var tag = el("span", "tag" + (c && c.id === p.id ? " now" : ""), c && c.id === p.id ? "Current" : (p.from > t ? "Starts later" : "Earlier"));
+      top.appendChild(tag);
+      art.appendChild(top);
+      art.appendChild(planBlock(p, false));
+      var acts = el("div", "actions");
+      if (confirmDeletePlanId === p.id) makeButtons(acts, p.id, [["Yes, delete", "delete", "danger"], ["Keep", "keep", "secondary"]]);
+      else makeButtons(acts, p.id, [["Edit", "edit", "secondary"], ["Delete", "ask", "secondary"]]);
+      art.appendChild(acts);
+      hist.appendChild(art);
+    });
+  }
+  function subscribePlans() {
+    db.collection("dietPlans").onSnapshot(function (snap) {
+      plans = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      renderDiet();
+    }, function () {});
+  }
+  function addPlanRow(item) {
+    item = item || {};
+    var row = el("div", "plan-row");
+    var fs = el("select", "wide p-feed");
+    fs.setAttribute("aria-label", "Feed");
+    addOpt(fs, "", "Choose a feed");
+    feeds.forEach(function (f) { addOpt(fs, f.id, f.name); });
+    if (item.feedId && !findFeed(item.feedId)) addOpt(fs, item.feedId, (item.feedName || "Removed feed") + " (removed)");
+    fs.value = item.feedId || "";
+    var am = el("input", "p-amount");
+    am.type = "number"; am.min = "0"; am.step = "any"; am.placeholder = "Amount"; am.setAttribute("inputmode", "decimal"); am.setAttribute("aria-label", "Amount");
+    if (item.amount != null) am.value = item.amount;
+    var us = el("select", "p-unit");
+    us.setAttribute("aria-label", "Unit");
+    UNITS.forEach(function (u) { addOpt(us, u, u); });
+    if (item.unit && UNITS.indexOf(item.unit) < 0) addOpt(us, item.unit, item.unit);
+    us.value = item.unit || "kg";
+    var tm = el("select", "p-time");
+    tm.setAttribute("aria-label", "Time of day");
+    addOpt(tm, "", "Time of day");
+    TIMES.forEach(function (x) { addOpt(tm, x, x); });
+    tm.value = item.time || "";
+    var rm = el("button", "btn secondary p-remove", "Remove");
+    rm.type = "button";
+    fs.addEventListener("change", function () { var f = findFeed(fs.value); if (f && f.unit) { if (UNITS.indexOf(f.unit) < 0) addOpt(us, f.unit, f.unit); us.value = f.unit; } });
+    rm.addEventListener("click", function () { row.remove(); });
+    row.appendChild(fs); row.appendChild(am); row.appendChild(us); row.appendChild(tm); row.appendChild(rm);
+    $("dietRows").appendChild(row);
+  }
+  function openPlanForm(plan, prefill) {
+    editingPlanId = plan ? plan.id : null;
+    $("dietRows").innerHTML = "";
+    var src = plan || prefill || null;
+    $("f-dietFrom").value = plan ? plan.from : today();
+    $("f-dietNote").value = plan ? (plan.note || "") : "";
+    var items = src && src.items && src.items.length ? src.items : [{}];
+    items.forEach(function (it) { addPlanRow(it); });
+    $("dietHeading").textContent = plan ? "Edit plan" : "New plan";
+    $("dietSaveBtn").textContent = plan ? "Save changes" : "Save plan";
+    setStatus($("dietStatus"), "", "");
+    $("dietForm").hidden = false;
+    $("dietForm").scrollIntoView();
+  }
+  function closePlanForm() { editingPlanId = null; $("dietForm").hidden = true; }
+  $("dietNewBtn").addEventListener("click", function () { openPlanForm(null, currentPlan($("dietHorse").value)); });
+  $("dietAddRow").addEventListener("click", function () { addPlanRow({}); });
+  $("dietCancelBtn").addEventListener("click", closePlanForm);
+  $("dietHorse").addEventListener("change", function () { closePlanForm(); confirmDeletePlanId = null; renderDiet(); });
+  $("dietAddHorse").addEventListener("click", function () { showTab("horse"); });
+  $("dietHistory").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-act]");
+    if (!b) return;
+    var id = b.getAttribute("data-id"), act = b.getAttribute("data-act");
+    if (act === "edit") openPlanForm(findPlan(id));
+    else if (act === "ask") { confirmDeletePlanId = id; renderDiet(); }
+    else if (act === "keep") { confirmDeletePlanId = null; renderDiet(); }
+    else if (act === "delete") {
+      db.doc("dietPlans/" + id).delete().then(function () {
+        plans = plans.filter(function (p) { return p.id !== id; });
+        confirmDeletePlanId = null;
+        if (editingPlanId === id) closePlanForm();
+        renderDiet();
+      }).catch(function () { setStatus($("dietStatus"), "Could not delete. Try again in a moment.", "err"); });
+    }
+  });
+  $("dietForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (!db || savingPlan) return;
+    var hid = $("dietHorse").value, from = $("f-dietFrom").value;
+    if (!hid) { setStatus($("dietStatus"), "Pick a horse.", "err"); return; }
+    if (!from) { setStatus($("dietStatus"), "Pick the date the plan starts.", "err"); return; }
+    var items = [], bad = "";
+    $("dietRows").querySelectorAll(".plan-row").forEach(function (row) {
+      var fid = row.querySelector(".p-feed").value, amt = numOrNull(row.querySelector(".p-amount").value);
+      if (!fid) { bad = "Pick a feed for each row, or remove the empty row."; return; }
+      if (amt !== null && (isNaN(amt) || amt < 0)) { bad = "Amounts should be numbers, or left blank."; return; }
+      var f = findFeed(fid), existingName = "";
+      if (!f) { var opt = row.querySelector(".p-feed option:checked"); existingName = opt ? opt.textContent.replace(/ \(removed\)$/, "") : ""; }
+      items.push({ feedId: fid, feedName: f ? f.name : existingName, amount: amt, unit: row.querySelector(".p-unit").value, time: row.querySelector(".p-time").value });
+    });
+    if (bad) { setStatus($("dietStatus"), bad, "err"); return; }
+    if (!items.length) { setStatus($("dietStatus"), "Add at least one feed to the plan.", "err"); return; }
+    var clash = plans.some(function (p) { return p.horseId === hid && p.from === from && p.id !== editingPlanId; });
+    if (clash) { setStatus($("dietStatus"), "There is already a plan starting on that day. Edit it, or pick another date.", "err"); return; }
+    var existing = editingPlanId ? findPlan(editingPlanId) : null, now = new Date().toISOString();
+    var d = { horseId: hid, horseName: horseName(hid), from: from, items: items, note: $("f-dietNote").value.trim(),
+      createdAt: (existing && existing.createdAt) || now, updatedAt: now };
+    var id = editingPlanId || db.collection("dietPlans").doc().id;
+    savingPlan = true;
+    $("dietSaveBtn").disabled = true;
+    setStatus($("dietStatus"), "Saving…", "");
+    db.doc("dietPlans/" + id).set(d).then(function () {
+      var rec = Object.assign({ id: id }, d), idx = -1;
+      plans.forEach(function (p, i) { if (p.id === id) idx = i; });
+      if (idx > -1) plans[idx] = rec; else plans.push(rec);
+      closePlanForm();
+      renderDiet();
+    }).catch(function (e) {
+      setStatus($("dietStatus"), e && e.code === "quota_exceeded" ? "Storage is full. Delete something and try again." : "Could not save. Press Save again. Your plan is still on screen.", "err");
+    }).then(function () {
+      savingPlan = false; $("dietSaveBtn").disabled = false;
+    });
+  });
+
+  /* ---------- history, search and export ---------- */
+  var histLimit = 50;
+  function histItems() {
+    var items = [];
+    feedings.forEach(function (f) {
+      var lines = [feedingSummary(f), feedingDetails(f), f.notes || ""];
+      items.push({ kind: "feeding", id: f.id, when: f.when || "", horseId: f.horseId, who: horseName(f.horseId, f.horseName), label: "Feeding", lines: lines });
+    });
+    entries.forEach(function (e) {
+      var parts = [];
+      if (e.activity) parts.push(e.activity);
+      if (e.minutes) parts.push(e.minutes + " min");
+      if (e.mood) parts.push(e.mood);
+      items.push({ kind: "activity", id: e.id, when: e.when || "", horseId: e.horseId, who: horseName(e.horseId, e.horseName), label: "Activity and mood", lines: [parts.join(" · "), e.notes || ""] });
+    });
+    plans.forEach(function (p) {
+      items.push({ kind: "diet", id: p.id, when: (p.from || "") + "T00:00", horseId: p.horseId, who: horseName(p.horseId, p.horseName), label: "Diet plan",
+        lines: (p.items || []).map(itemText).concat(p.note ? [p.note] : []), dateOnly: true });
+    });
+    items.forEach(function (it) { it.hay = (it.label + " " + it.who + " " + it.lines.join(" ")).toLowerCase(); });
+    return items;
+  }
+  function renderHistory() {
+    var box = $("hList");
+    box.innerHTML = "";
+    var words = $("f-hSearch").value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    var hid = $("f-hHorse").value, type = $("f-hType").value, from = $("f-hFrom").value, to = $("f-hTo").value;
+    var items = histItems().filter(function (it) {
+      if (hid && it.horseId !== hid) return false;
+      if (type && it.kind !== type) return false;
+      var d = it.when.slice(0, 10);
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      for (var i = 0; i < words.length; i++) if (it.hay.indexOf(words[i]) < 0) return false;
+      return true;
+    });
+    items.sort(function (a, b) { return String(b.when).localeCompare(String(a.when)); });
+    $("hCount").textContent = items.length + " result" + (items.length === 1 ? "" : "s");
+    if (!items.length) box.appendChild(el("p", "muted", "Nothing matches. Try fewer filters."));
+    items.slice(0, histLimit).forEach(function (it) {
+      var art = el("article", "entry");
+      var top = el("div", "entry-top");
+      top.appendChild(el("strong", "", it.label + " · " + it.who));
+      top.appendChild(el("span", "muted", it.dateOnly ? "From " + fmtDay(it.when.slice(0, 10)) : fmtEntryTime(it.when)));
+      art.appendChild(top);
+      it.lines.forEach(function (l, i) { if (l) art.appendChild(el("p", i === 0 ? "" : "muted", l)); });
+      var acts = el("div", "actions");
+      var b = el("button", "btn secondary", "Edit");
+      b.type = "button"; b.setAttribute("data-kind", it.kind); b.setAttribute("data-id", it.id);
+      acts.appendChild(b);
+      art.appendChild(acts);
+      box.appendChild(art);
+    });
+    $("hMore").hidden = items.length <= histLimit;
+  }
+  function jumpEdit(kind, id) {
+    if (kind === "feeding") { showTab("log"); setSeg("feeding"); startEditFeeding(id); }
+    else if (kind === "activity") { showTab("log"); setSeg("activity"); startEdit(id); }
+    else {
+      var p = findPlan(id);
+      if (!p) return;
+      showTab("diet");
+      $("dietHorse").value = p.horseId;
+      renderDiet();
+      openPlanForm(p);
+    }
+  }
+  $("hList").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-kind]");
+    if (b) jumpEdit(b.getAttribute("data-kind"), b.getAttribute("data-id"));
+  });
+  ["f-hSearch", "f-hHorse", "f-hType", "f-hFrom", "f-hTo"].forEach(function (id) {
+    $(id).addEventListener("input", function () { histLimit = 50; renderHistory(); });
+    // A text box also fires "change" when it loses focus. Re-drawing the list then would swallow the tap on a result's button.
+    if (id !== "f-hSearch") $(id).addEventListener("change", function () { histLimit = 50; renderHistory(); });
+  });
+  $("hClear").addEventListener("click", function () {
+    $("f-hSearch").value = ""; $("f-hHorse").value = ""; $("f-hType").value = ""; $("f-hFrom").value = ""; $("f-hTo").value = "";
+    histLimit = 50; renderHistory();
+  });
+  $("hMore").addEventListener("click", function () { histLimit += 50; renderHistory(); });
+
+  function csvCell(v) {
+    if (v == null) return "";
+    var s = String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function toCsv(head, rows) {
+    return "﻿" + [head].concat(rows).map(function (r) { return r.map(csvCell).join(","); }).join("\r\n") + "\r\n";
+  }
+  function exportCsv(kind) {
+    var head, rows = [], name;
+    if (kind === "feedings") {
+      name = "feedings";
+      head = ["Date", "Time", "Horse", "Feed", "Unit", "Offered", "Left", "Eaten", "Interest before eating", "Acceptance after tasting", "Eating behaviour", "Observations afterwards", "Notes"];
+      feedings.slice().sort(function (a, b) { return String(a.when).localeCompare(String(b.when)); }).forEach(function (f) {
+        rows.push([(f.when || "").slice(0, 10), (f.when || "").slice(11, 16), horseName(f.horseId, f.horseName), f.feedName, f.unit, f.offered, f.left, f.eaten, f.interest, f.accept, f.behaviour, f.obs, f.notes]);
+      });
+    } else if (kind === "activity") {
+      name = "activity-and-mood";
+      head = ["Date", "Time", "Horse", "Activity", "Minutes", "Mood or behaviour", "Notes"];
+      entries.slice().sort(function (a, b) { return String(a.when).localeCompare(String(b.when)); }).forEach(function (e) {
+        rows.push([(e.when || "").slice(0, 10), (e.when || "").slice(11, 16), horseName(e.horseId, e.horseName), e.activity, e.minutes, e.mood, e.notes]);
+      });
+    } else {
+      name = "diet-plans";
+      head = ["Starts on", "Horse", "Feed", "Amount", "Unit", "Time of day", "Reason for the change"];
+      plans.slice().sort(function (a, b) { return String(a.from).localeCompare(String(b.from)); }).forEach(function (p) {
+        (p.items || []).forEach(function (it) { rows.push([p.from, horseName(p.horseId, p.horseName), it.feedName, it.amount, it.unit, it.time, p.note]); });
+      });
+    }
+    if (!rows.length) { setStatus($("exportStatus"), "Nothing to export yet.", ""); return; }
+    setStatus($("exportStatus"), "Preparing file…", "");
+    fileSaver.save({ filename: "horse-journal-" + name + "-" + today() + ".csv", data: toCsv(head, rows), type: "text/csv" }).then(function () {
+      setStatus($("exportStatus"), "File ready (" + rows.length + " row" + (rows.length === 1 ? "" : "s") + ").", "ok");
+    }).catch(function (e) {
+      setStatus($("exportStatus"), e && e.code === "declined" ? "Export cancelled." : "Could not make the file. Try again.", e && e.code === "declined" ? "" : "err");
+    });
+  }
+  $("exFeedings").addEventListener("click", function () { exportCsv("feedings"); });
+  $("exActivity").addEventListener("click", function () { exportCsv("activity"); });
+  $("exDiet").addEventListener("click", function () { exportCsv("diet"); });
+
+  /* ---------- home ---------- */
+  function ymd(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function groupFeeds(list) {
+    var map = {}, order = [];
+    list.forEach(function (f) {
+      var key = (f.feedName || "?") + "|" + (f.unit || "");
+      if (!map[key]) { map[key] = { name: f.feedName || "Feed", unit: f.unit || "", n: 0, offered: 0, eaten: 0, eatenOffered: 0 }; order.push(key); }
+      var m = map[key];
+      m.n++; m.offered += f.offered || 0;
+      if (f.eaten != null) { m.eaten += f.eaten; m.eatenOffered += f.offered || 0; }
+    });
+    return order.map(function (k) { return map[k]; });
+  }
+  function countBy(list, field) {
+    var m = {};
+    list.forEach(function (x) { if (x[field]) m[x[field]] = (m[x[field]] || 0) + 1; });
+    return Object.keys(m).sort(function (a, b) { return m[b] - m[a]; }).map(function (k) { return k + " ×" + m[k]; }).join(", ");
+  }
+  function renderHome() {
+    var has = horses.length > 0;
+    $("homeNoHorse").hidden = has;
+    $("homeMain").hidden = !has;
+    if (!has) return;
+    var hid = $("homeHorse").value;
+    var mine = function (x) { return !hid || x.horseId === hid; };
+    var t = today();
+
+    var rem = $("homeReminders");
+    rem.innerHTML = "";
+    feeds.forEach(function (f) { if (f.note) rem.appendChild(el("p", "remind", f.name + ": " + f.note)); });
+    if (!lastBackupAt) rem.appendChild(el("p", "remind", "No backup yet. Make one in the Horse tab."));
+    else if (Date.now() - new Date(lastBackupAt).getTime() > 30 * 86400000) rem.appendChild(el("p", "remind", "Your last backup is over a month old. Make a new one in the Horse tab."));
+    $("homeRemindCard").hidden = rem.children.length === 0;
+
+    var td = $("homeToday");
+    td.innerHTML = "";
+    var tf = feedings.filter(function (f) { return mine(f) && (f.when || "").slice(0, 10) === t; });
+    var ta = entries.filter(function (e) { return mine(e) && (e.when || "").slice(0, 10) === t; });
+    td.appendChild(el("p", "", tf.length + " feeding" + (tf.length === 1 ? "" : "s") + " logged, " + ta.length + " activit" + (ta.length === 1 ? "y" : "ies") + " or mood note" + (ta.length === 1 ? "" : "s") + "."));
+    groupFeeds(tf).forEach(function (g) {
+      var s = g.name + ": offered " + fmtNum(g.offered) + " " + g.unit;
+      s += g.eatenOffered > 0 ? ", ate " + fmtNum(g.eaten) + " " + g.unit : ", amount left not recorded";
+      td.appendChild(el("p", "muted", s));
+    });
+    var lastMood = ta.filter(function (e) { return e.mood; }).sort(function (a, b) { return String(b.when).localeCompare(String(a.when)); })[0];
+    if (lastMood) td.appendChild(el("p", "muted", "Latest mood or behaviour: " + lastMood.mood));
+
+    var days = [];
+    for (var i = 6; i >= 0; i--) { var dd = new Date(); dd.setDate(dd.getDate() - i); days.push(ymd(dd)); }
+    var wf = feedings.filter(function (f) { return mine(f) && days.indexOf((f.when || "").slice(0, 10)) > -1; });
+    var wa = entries.filter(function (e) { return mine(e) && days.indexOf((e.when || "").slice(0, 10)) > -1; });
+    var counts = days.map(function (d) { return wf.filter(function (f) { return (f.when || "").slice(0, 10) === d; }).length; });
+    var max = Math.max.apply(null, counts.concat([1]));
+    var bars = $("homeBars");
+    bars.innerHTML = "";
+    bars.setAttribute("aria-label", "Feedings per day, last 7 days: " + counts.join(", "));
+    days.forEach(function (d, i) {
+      var col = el("div", "bar");
+      col.appendChild(el("b", "", String(counts[i])));
+      var bar = el("i");
+      bar.style.height = Math.max(2, Math.round(counts[i] / max * 64)) + "px";
+      col.appendChild(bar);
+      col.appendChild(el("span", "", new Date(d + "T00:00").toLocaleDateString(undefined, { weekday: "short" })));
+      bars.appendChild(col);
+    });
+    var wk = $("homeWeek");
+    wk.innerHTML = "";
+    groupFeeds(wf).forEach(function (g) {
+      var s = g.name + " (" + g.unit + "): " + g.n + " feeding" + (g.n === 1 ? "" : "s");
+      if (g.eatenOffered > 0) s += ", ate " + Math.round(g.eaten / g.eatenOffered * 100) + "% of what was offered";
+      wk.appendChild(el("p", "", s));
+    });
+    var acc = countBy(wf, "accept");
+    if (acc) wk.appendChild(el("p", "muted", "After tasting: " + acc));
+    var act = countBy(wa, "activity");
+    if (act) wk.appendChild(el("p", "muted", "Activities: " + act));
+    var mood = countBy(wa, "mood");
+    if (mood) wk.appendChild(el("p", "muted", "Moods and behaviour: " + mood));
+    if (!wf.length && !wa.length) wk.appendChild(el("p", "muted", "Nothing logged in the last 7 days."));
+
+    var pl = $("homePlans");
+    pl.innerHTML = "";
+    (hid ? [find(hid)] : horses).forEach(function (h) {
+      if (!h) return;
+      var c = currentPlan(h.id);
+      if (horses.length > 1 && !hid) pl.appendChild(el("h3", "", h.name || "Unnamed horse"));
+      if (c) { pl.appendChild(el("p", "muted small", "Since " + fmtDay(c.from))); pl.appendChild(planBlock(c, false)); }
+      else pl.appendChild(el("p", "muted", "No plan recorded yet. Add one in the Diet tab."));
+    });
+  }
+  $("homeHorse").addEventListener("change", renderHome);
+  $("homeAddHorse").addEventListener("click", function () { showTab("horse"); });
+  $("homeLogFeeding").addEventListener("click", function () { showTab("log"); setSeg("feeding"); });
+  $("homeLogActivity").addEventListener("click", function () { showTab("log"); setSeg("activity"); });
+
+  /* ---------- storage kept on this phone ---------- */
+  var STORE_KEY = "horse-journal-v1";
+  var LocalDB = (function () {
+    var data = {}, listeners = [];
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
+    function available() {
+      try { localStorage.setItem("__hj_test", "1"); localStorage.removeItem("__hj_test"); return true; } catch (e) { return false; }
+    }
+    function load() {
+      try {
+        var raw = localStorage.getItem(STORE_KEY);
+        data = raw ? JSON.parse(raw) : {};
+        if (!data || typeof data !== "object") data = {};
+      } catch (e) { data = {}; }
+    }
+    function persist() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); return null; }
+      catch (e) { return e && e.name === "QuotaExceededError" ? "quota_exceeded" : "unavailable"; }
+    }
+    function notify() { listeners.slice().forEach(function (l) { try { l(); } catch (e) {} }); }
+    function mutate(fn) {
+      var before = JSON.stringify(data);
+      fn();
+      var err = persist();
+      if (err) { data = JSON.parse(before); return Promise.reject({ code: err }); }
+      notify();
+      return Promise.resolve();
+    }
+    function snapDoc(coll, id) {
+      var d = data[coll] && data[coll][id];
+      return { id: id, exists: !!d, data: function () { return d ? clone(d) : undefined; } };
+    }
+    function subscribe(compute, next) {
+      var off = false;
+      function fire() { if (!off) next(compute()); }
+      listeners.push(fire);
+      setTimeout(fire, 0);
+      return function () { off = true; listeners = listeners.filter(function (l) { return l !== fire; }); };
+    }
+    function newId() {
+      var a = new Uint8Array(10), s = "";
+      try { crypto.getRandomValues(a); } catch (e) { for (var i = 0; i < 10; i++) a[i] = Math.floor(Math.random() * 256); }
+      for (var j = 0; j < a.length; j++) s += (a[j] % 36).toString(36);
+      return "h" + Date.now().toString(36) + s;
+    }
+    function docRef(coll, id) {
+      return {
+        id: id, path: coll + "/" + id,
+        get: function () { return Promise.resolve(snapDoc(coll, id)); },
+        set: function (d) { return mutate(function () { (data[coll] = data[coll] || {})[id] = clone(d); }); },
+        delete: function () { return mutate(function () { if (data[coll]) delete data[coll][id]; }); },
+        onSnapshot: function (next) { return subscribe(function () { return snapDoc(coll, id); }, next); }
+      };
+    }
+    function query(coll, order, lim) {
+      function run() {
+        var m = data[coll] || {};
+        var rows = Object.keys(m).map(function (id) { return { id: id, d: m[id] }; });
+        rows.sort(function (a, b) {
+          if (!order) return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+          var x = a.d[order.f], y = b.d[order.f];
+          if (x == null && y == null) return 0;
+          if (x == null) return 1;
+          if (y == null) return -1;
+          var c = x < y ? -1 : x > y ? 1 : 0;
+          return order.dir === "desc" ? -c : c;
+        });
+        if (lim) rows = rows.slice(0, lim);
+        var docs = rows.map(function (r) { return snapDoc(coll, r.id); });
+        return { docs: docs, size: docs.length, empty: !docs.length };
+      }
+      return {
+        orderBy: function (f, dir) { return query(coll, { f: f, dir: dir || "asc" }, lim); },
+        limit: function (n) { return query(coll, order, n); },
+        get: function () { return Promise.resolve(run()); },
+        onSnapshot: function (next) { return subscribe(run, next); }
+      };
+    }
+    function collection(name) {
+      var q = query(name, null, 0);
+      q.path = name;
+      q.doc = function (id) { return docRef(name, id || newId()); };
+      return q;
+    }
+    load();
+    window.addEventListener("storage", function (e) { if (e.key === STORE_KEY) { load(); notify(); } });
+    return {
+      available: available,
+      db: {
+        doc: function (path) { var i = path.indexOf("/"); return docRef(path.slice(0, i), path.slice(i + 1)); },
+        collection: collection
+      }
+    };
+  })();
+
+  // Saves a backup file: the share sheet on phones, a normal download elsewhere.
+  var fileSaver = {
+    save: function (o) {
+      var text = o.data, name = o.filename;
+      function viaDownload() {
+        var blob = new Blob([text], { type: o.type || "application/json" });
+        var url = URL.createObjectURL(blob), a = document.createElement("a");
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+        return Promise.resolve({ status: "saved" });
+      }
+      var file = null;
+      try { file = new File([text], name, { type: o.type || "application/json" }); } catch (e) {}
+      if (navigator.maxTouchPoints > 0 && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file], title: name }).then(function () { return { status: "saved" }; }, function (err) {
+          if (err && err.name === "AbortError") return Promise.reject({ code: "declined" });
+          return viaDownload();
+        });
+      }
+      return viaDownload();
+    }
+  };
+
+  /* ---------- connect to storage ---------- */
+  function goOffline() {
+    setPill("Not saving", true);
+    $("offline").hidden = false;
+    $("saveBtn").disabled = true;
+    $("backupBtn").disabled = true;
+    $("restoreFile").disabled = true;
+    $("restoreLabel").style.opacity = "0.55";
+    $("lastBackup").textContent = "";
+  }
+  function onHorses(snap) {
+    horses = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+    sortHorses();
+    if (!initialised) {
+      initialised = true;
+      var pref = null;
+      try { pref = localStorage.getItem("hfj-horse"); } catch (e) {}
+      var pick = (pref && find(pref)) || horses[0] || null;
+      currentId = pick ? pick.id : null;
+      fillForm(pick);
+    } else if (currentId && !find(currentId)) {
+      currentId = horses[0] ? horses[0].id : null;
+      dirty = false;
+      fillForm(horses[0] || null);
+    } else if (currentId && !dirty) {
+      fillForm(find(currentId));
+    } else if (!currentId && horses.length && !dirty && !addingNew) {
+      currentId = horses[0].id;
+      fillForm(horses[0]);
+    }
+    renderPicker(); renderHeader();
+    renderLogHorses();
+    renderOtherHorseSelects();
+  }
+  // First run only: a starter list of common feed names (no amounts) so the Feeds tab is not empty.
+  // Runs once per phone; deleted starter feeds do not come back.
+  var STARTER_FEEDS = [
+    ["Teff hay", "flakes", ""], ["Lucerne", "flakes", ""], ["Chaff", "scoops", ""], ["Pellets", "scoops", ""],
+    ["Cubes", "scoops", ""], ["Bran", "scoops", ""], ["Beet pulp", "scoops", ""], ["Supplement", "scoops", ""],
+    ["Carrots", "kg", "Go easy on these"], ["Apples", "kg", ""], ["Treats", "g", ""]
+  ];
+  function addStarterFeeds() {
+    db.doc("meta/starter").get().then(function (snap) {
+      if (snap.exists) return;
+      return db.collection("feeds").get().then(function (fs) {
+        var jobs = [];
+        if (fs.empty) {
+          var now = new Date().toISOString();
+          STARTER_FEEDS.forEach(function (f) {
+            var id = "starter-" + f[0].toLowerCase().replace(/[^a-z0-9]+/g, "-");
+            jobs.push(db.doc("feeds/" + id).set({ name: f[0], unit: f[1], note: f[2], createdAt: now, updatedAt: now }));
+          });
+        }
+        return Promise.all(jobs).then(function () { return db.doc("meta/starter").set({ addedAt: new Date().toISOString() }); });
+      });
+    }).catch(function () {});
+  }
+  function start() {
+    if (!LocalDB.available()) { goOffline(); return; }
+    db = LocalDB.db; downloads = fileSaver;
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+    setPill("Saved on this phone");
+    $("saveBtn").disabled = false;
+    $("backupBtn").disabled = false;
+    $("logSaveBtn").disabled = false;
+    subscribeActivity();
+    addStarterFeeds();
+    subscribeFeeds();
+    subscribeFeedings();
+    subscribePlans();
+    $("feedSaveBtn").disabled = false;
+    $("feedingSaveBtn").disabled = false;
+    db.collection("horses").onSnapshot(onHorses, function () {});
+    db.doc("meta/backup").onSnapshot(function (snap) {
+      renderLastBackup(snap.exists ? snap.data() : null);
+    }, function () {});
+    uiReady = true;
+    renderHome();
+  }
+  fillForm(null);
+  start();
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+})();
+</script>
+</body>
+</html>
