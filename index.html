@@ -117,6 +117,8 @@ input, select, textarea {
 }
 .card.inset input, .card.inset select { background: var(--surface); }
 textarea { min-height: 110px; resize: vertical; }
+input[type="time"], input[type="date"], input[type="datetime-local"] { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; -webkit-appearance: none; appearance: none; text-align: left; }
+.grid > * { min-width: 0; }
 input:focus-visible, select:focus-visible, textarea:focus-visible, .btn:focus-visible, .tab:focus-visible, summary:focus-visible {
   outline: 3px solid var(--focus); outline-offset: 2px;
 }
