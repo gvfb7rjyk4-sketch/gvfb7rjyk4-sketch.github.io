@@ -386,6 +386,26 @@ details p { margin-top: 10px; }
     </section>
 
     <section id="panel-feeds" class="panel" hidden>
+      <section class="card" aria-labelledby="ftHeading">
+        <h2 id="ftHeading">Feed times</h2>
+        <p class="muted small">Set the times each horse is fed. The Home tab then shows when a feed is due or overdue. A feed counts as done once you log a feeding around that time.</p>
+        <div id="ftList" class="list"></div>
+        <form id="ftForm" novalidate>
+          <div class="grid">
+            <div class="field"><label for="f-ftHorse">Horse</label><select id="f-ftHorse"></select></div>
+            <div class="field"><label for="f-ftTime">Time</label><input id="f-ftTime" type="time" value="07:00"></div>
+            <div class="field"><label for="f-ftLabel">Name (optional)</label><input id="f-ftLabel" type="text" maxlength="30" placeholder="Morning feed" autocomplete="off"></div>
+          </div>
+          <div class="actions"><button id="ftAddBtn" class="btn" type="submit">Add feed time</button></div>
+          <p id="ftStatus" class="status" role="status" aria-live="polite"></p>
+        </form>
+        <div class="actions">
+          <button id="ftCalBtn" class="btn secondary" type="button">Add alarms to my phone calendar</button>
+          <button id="ftNotifBtn" class="btn secondary" type="button">Turn on alerts while the app is open</button>
+        </div>
+        <p class="muted small">Calendar alarms ring even when the app is closed. In-app alerts only appear while the journal is open.</p>
+        <p id="ftCalStatus" class="status" role="status" aria-live="polite"></p>
+      </section>
       <section class="card" aria-labelledby="feedListHeading">
         <h2 id="feedListHeading">Your feeds</h2>
         <p class="muted small">A few common feeds are here to start with. Tap Edit to change the unit or add a note, and Delete any you don't use.</p>
@@ -561,7 +581,7 @@ details p { margin-top: 10px; }
   var $ = function (id) { return document.getElementById(id); };
   var APP = "horse-feeding-journal";
   // Collections included in backups. Later steps add feeds, logs and diet plans here.
-  var COLLECTIONS = ["horses", "activity", "feeds", "feedings", "dietPlans"];
+  var COLLECTIONS = ["horses", "activity", "feeds", "feedings", "dietPlans", "feedTimes"];
   var TABS = ["home", "log", "history", "feeds", "diet", "horse"];
 
   // Dropdown choices. Every list also offers "Other…", which reveals a box to type in.
@@ -1856,6 +1876,11 @@ details p { margin-top: 10px; }
 
     var rem = $("homeReminders");
     rem.innerHTML = "";
+    feedReminderLines(hid).forEach(function (l) {
+      var p = el("p", l.cls, l.text);
+      if (l.go) { var gb = el("button", "btn", "Log a feeding"); gb.type = "button"; gb.style.marginTop = "8px"; gb.addEventListener("click", function () { showTab("log"); setSeg("feeding"); }); p.appendChild(document.createElement("br")); p.appendChild(gb); }
+      rem.appendChild(p);
+    });
     feeds.forEach(function (f) { if (f.note) rem.appendChild(el("p", "remind", f.name + ": " + f.note)); });
     if (!lastBackupAt) rem.appendChild(el("p", "remind", "No backup yet. Make one in the Horse tab."));
     else if (Date.now() - new Date(lastBackupAt).getTime() > 30 * 86400000) rem.appendChild(el("p", "remind", "Your last backup is over a month old. Make a new one in the Horse tab."));
@@ -2041,6 +2066,130 @@ details p { margin-top: 10px; }
     }
   };
 
+  /* ---------- feed times and reminders ---------- */
+  var feedTimes = [];
+  function sortFeedTimes() { feedTimes.sort(function (a, b) { return String(a.time).localeCompare(String(b.time)); }); }
+  function ftName(t) { return t.label || "Feed"; }
+  function slotDate(time) {
+    var p = String(time).split(":"), d = new Date();
+    d.setHours(+p[0] || 0, +p[1] || 0, 0, 0);
+    return d;
+  }
+  function slotDone(t) {
+    var from = slotDate(t.time).getTime() - 90 * 60000;
+    return feedings.some(function (f) {
+      if (f.horseId !== t.horseId) return false;
+      var w = new Date(f.when).getTime();
+      return !isNaN(w) && (f.when || "").slice(0, 10) === today() && w >= from;
+    });
+  }
+  function slotState(t) {
+    if (slotDone(t)) return "done";
+    return Date.now() > slotDate(t.time).getTime() + 15 * 60000 ? "overdue" : "upcoming";
+  }
+  function untilText(ms) {
+    var m = Math.max(1, Math.round(ms / 60000));
+    return m < 60 ? "in " + m + " min" : "in " + Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) + " min" : "");
+  }
+  function feedReminderLines(hid) {
+    var mine = feedTimes.filter(function (t) { return (!hid || t.horseId === hid) && find(t.horseId); });
+    var lines = [], next = null, pending = 0;
+    mine.forEach(function (t) {
+      var st = slotState(t), who = hid ? "" : horseName(t.horseId) + ": ";
+      if (st === "overdue") { lines.push({ cls: "remind", text: "Feed overdue. " + who + ftName(t) + " at " + t.time, go: true }); pending++; }
+      else if (st === "upcoming") { pending++; if (!next) next = { t: t, who: who }; }
+    });
+    if (next) lines.push({ cls: "remind", text: "Next feed: " + next.who + ftName(next.t) + " at " + next.t.time + " (" + untilText(slotDate(next.t.time).getTime() - Date.now()) + ")" });
+    if (mine.length && !pending) lines.push({ cls: "remind", text: "All of today's feeds are logged." });
+    return lines;
+  }
+  function renderFeedTimes() {
+    if (!$("ftList")) return;
+    fillHorseSelect($("f-ftHorse"), false);
+    var box = $("ftList"); box.innerHTML = "";
+    if (!feedTimes.length) box.appendChild(el("p", "muted small", "No feed times yet."));
+    feedTimes.forEach(function (t) {
+      var row = el("div", "entry");
+      var top = el("div", "entry-top");
+      top.appendChild(el("strong", "", t.time + " · " + ftName(t)));
+      top.appendChild(el("span", "muted", horseName(t.horseId)));
+      row.appendChild(top);
+      var b = el("button", "btn danger", "Remove"); b.type = "button"; b.setAttribute("data-ft", t.id);
+      row.appendChild(b); box.appendChild(row);
+    });
+  }
+  function subscribeFeedTimes() {
+    db.collection("feedTimes").onSnapshot(function (snap) {
+      feedTimes = snap.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
+      sortFeedTimes(); renderFeedTimes();
+      if (uiReady) renderHome();
+    }, function () {});
+  }
+  $("ftForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var hid = $("f-ftHorse").value, time = $("f-ftTime").value;
+    if (!hid) { setStatus($("ftStatus"), "Add a horse first (Horse tab).", "err"); return; }
+    if (!time) { setStatus($("ftStatus"), "Pick a time.", "err"); return; }
+    var id = db.collection("feedTimes").doc().id;
+    db.doc("feedTimes/" + id).set({ horseId: hid, time: time, label: $("f-ftLabel").value.trim(), createdAt: new Date().toISOString() }).then(function () {
+      $("f-ftLabel").value = ""; setStatus($("ftStatus"), "Feed time added.", "ok");
+    }, function () { setStatus($("ftStatus"), "Could not save. Try again.", "err"); });
+  });
+  $("ftList").addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-ft]"); if (!b) return;
+    var id = b.getAttribute("data-ft");
+    db.doc("feedTimes/" + id).delete().then(function () {
+      feedTimes = feedTimes.filter(function (t) { return t.id !== id; }); renderFeedTimes(); if (uiReady) renderHome();
+    }, function () {});
+  });
+  function icsEsc(x) { return String(x).replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
+  $("ftCalBtn").addEventListener("click", function () {
+    var list = feedTimes.filter(function (t) { return find(t.horseId); });
+    if (!list.length) { setStatus($("ftCalStatus"), "Add a feed time first.", "err"); return; }
+    var d = new Date(), ymd = d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+    var stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Horse Journal//Feed times//EN", "CALSCALE:GREGORIAN"];
+    list.forEach(function (t) {
+      var hm = String(t.time).replace(":", "") + "00", name = "Feed " + horseName(t.horseId) + (t.label ? " (" + t.label + ")" : "");
+      L.push("BEGIN:VEVENT", "UID:hj-" + t.id + "@horse-journal", "DTSTAMP:" + stamp, "DTSTART:" + ymd + "T" + hm, "DURATION:PT30M",
+        "RRULE:FREQ=DAILY", "SUMMARY:" + icsEsc(name),
+        "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(name), "TRIGGER:PT0M", "END:VALARM", "END:VEVENT");
+    });
+    L.push("END:VCALENDAR");
+    fileSaver.save({ filename: "horse-feed-times.ics", data: L.join("\r\n"), type: "text/calendar" }).then(function () {
+      setStatus($("ftCalStatus"), "Open the file to add the daily alarms to your calendar.", "ok");
+    }, function () { setStatus($("ftCalStatus"), "Not saved.", "err"); });
+  });
+  function notifState() {
+    var b = $("ftNotifBtn");
+    if (!("Notification" in window)) { b.hidden = true; return; }
+    b.textContent = Notification.permission === "granted" ? "In-app alerts are on" : "Turn on alerts while the app is open";
+    b.disabled = Notification.permission === "denied";
+  }
+  $("ftNotifBtn").addEventListener("click", function () {
+    if (!("Notification" in window)) return;
+    Notification.requestPermission().then(notifState, notifState);
+  });
+  function checkNotify() {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    feedTimes.forEach(function (t) {
+      if (!find(t.horseId)) return;
+      var diff = Date.now() - slotDate(t.time).getTime();
+      if (diff < 0 || diff > 30 * 60000 || slotDone(t)) return;
+      var key = "hfj-n-" + today() + "-" + t.id, seen = false;
+      try { seen = !!localStorage.getItem(key); localStorage.setItem(key, "1"); } catch (e) {}
+      if (seen) return;
+      var msg = "Feed " + horseName(t.horseId) + " (" + t.time + ")";
+      try {
+        if (navigator.serviceWorker && navigator.serviceWorker.ready) navigator.serviceWorker.ready.then(function (r) { r.showNotification("Feed time", { body: msg }); }, function () { new Notification("Feed time", { body: msg }); });
+        else new Notification("Feed time", { body: msg });
+      } catch (e) {}
+    });
+  }
+  setInterval(function () { if (uiReady) { renderHome(); checkNotify(); } }, 60000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && uiReady) { renderHome(); checkNotify(); } });
+  notifState();
+
   /* ---------- connect to storage ---------- */
   function goOffline() {
     setPill("Not saving", true);
@@ -2074,6 +2223,7 @@ details p { margin-top: 10px; }
     renderPicker(); renderHeader();
     renderLogHorses();
     renderOtherHorseSelects();
+    renderFeedTimes();
   }
   // First run only: a starter list of common feed names (no amounts) so the Feeds tab is not empty.
   // Runs once per phone; deleted starter feeds do not come back.
@@ -2110,6 +2260,7 @@ details p { margin-top: 10px; }
     addStarterFeeds();
     subscribeFeeds();
     subscribeFeedings();
+    subscribeFeedTimes();
     subscribePlans();
     $("feedSaveBtn").disabled = false;
     $("feedingSaveBtn").disabled = false;
